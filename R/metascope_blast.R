@@ -624,8 +624,9 @@ metascope_blast <- function(metascope_id_path,
   fastas_tmp_dir <- file.path(tmp_dir, "fastas")
   if(!dir.exists(fastas_tmp_dir)) dir.create(fastas_tmp_dir, recursive = TRUE)
 
-  # Generate fasta sequences from bam file
-  for (i in c(1:100)) {
+  # Generate fasta sequences from bam file for num_results
+  num_results = min(num_results, nrow(metascope_id_species))
+  for (i in c(1:num_results)) {
     taxids = strsplit(metascope_id_species$TaxonomyIDs[i], split = ",")[[1]]
     read_proportions = strsplit(metascope_id_species$read_proportions[i], split = ",")[[1]]
     reads_to_sample = ceiling(as.numeric(read_proportions) * num_reads)
