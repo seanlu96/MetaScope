@@ -40,6 +40,32 @@ add_in_taxa <- function(combined_pre, caching, path_to_write) {
 }
 
 
+add_in_taxa_ncbi <- function(combined_pre, NCBI_key) {
+  taxon_ranks <- c("superkingdom", "kingdom", "phylum", "class",
+                   "order", "family", "genus", "species")
+  all_ncbi <- plyr::llply(combined_pre$TaxonomyID, .fun = class_taxon,
+                          NCBI_key = NCBI_key, .progress = "text",
+                          num_tries = 3)
+  # fix unknowns
+  na_ind <- which(is.na(all_ncbi))
+  unk_tab <- data.frame(name = "unknown", rank = taxon_ranks, id = 0)
+  if (length(na_ind) > 0) for (i in na_ind) all_ncbi[[i]] <- unk_tab
+  # Create table
+  taxonomy_table <- plyr::llply(all_ncbi, mk_table, taxon_ranks) %>%
+    dplyr::bind_rows() %>% as.data.frame()
+  colnames(taxonomy_table) <- taxon_ranks
+  # later
+  tax_table_pre <- taxonomy_table %>%
+    dplyr::mutate(TaxonomyID = combined_pre$TaxonomyID) %>%
+    dplyr::relocate("TaxonomyID") %>%
+    dplyr::distinct(.data$TaxonomyID, .keep_all = TRUE) %>%
+    dplyr::left_join(combined_pre, by = c("TaxonomyID")) %>%
+    dplyr::relocate("genus", "species", .after = "family") %>%
+    dplyr::relocate("read_count", "Proportion", "readsEM", "EMProportion", .after = "species") %>%
+    dplyr::select(-"Genome")
+  return(tax_table_pre)
+}
+
 #' Gets sequences from bam file
 #'
 #' Returns fasta sequences from a bam file with a given taxonomy ID
@@ -115,7 +141,7 @@ get_multi_seqs <- function(ids_n, bam_file) {
 #' @param accessions_path Path to accessionsTaxa.sql
 #' @importFrom rlang .data
 #' @return Returns a dataframe of blast results for a metascope result
-#' 
+#'
 
 taxid_to_name <- function(taxids, accessions_path) {
   taxids <- stringr::str_replace(taxids, ";(.*)$", "") |> as.integer()
@@ -572,16 +598,21 @@ metascope_blast <- function(metascope_id_path,
   # Load in metascope id file and clean unknown genomes
   metascope_id_in <- utils::read.csv(metascope_id_path, header = TRUE)
 
-  # This should only be for silva databases, NCBI databases need to add in taxa through another function
   # Group metascope id by species and create metascope species id
-  metascope_id_tax <- add_in_taxa(metascope_id_in, caching = FALSE, path_to_write = tmp_dir)
+  if (db == "silva") {
+    # Group metascope id by species and create metascope species id
+    metascope_id_tax <- add_in_taxa(metascope_id_in, caching = FALSE,
+                                    path_to_write = tmp_dir)
+  } else if (db == "ncbi") {
+    metascope_id_tax <- add_in_taxa_ncbi(metascope_id_in)
+  }
 
   metascope_id_species <- metascope_id_tax |> dplyr::mutate(id = dplyr::row_number()) |>
     dplyr::group_by(superkingdom, kingdom, phylum, class, order, family, genus, species) |>
-    dplyr::summarise(read_counts = sum(read_count), 
+    dplyr::summarise(read_counts = sum(read_count),
                      Proportion = sum(Proportion),
-                     readsEM = sum(readsEM), 
-                     EMProportion = sum(EMProportion), 
+                     readsEM = sum(readsEM),
+                     EMProportion = sum(EMProportion),
                      IDs = paste0(id, collapse = ","),
                      TaxonomyIDs = paste0(TaxonomyID, collapse = ","),
                      read_proportions = paste0(read_count/sum(read_count), collapse = ",")) |>
@@ -592,7 +623,7 @@ metascope_blast <- function(metascope_id_path,
   # Create fasta directory in tmp directory to save fasta sequences
   fastas_tmp_dir <- file.path(tmp_dir, "fastas")
   if(!dir.exists(fastas_tmp_dir)) dir.create(fastas_tmp_dir, recursive = TRUE)
-            
+
   # Generate fasta sequences from bam file
   for (i in c(1:100)) {
     taxids = strsplit(metascope_id_species$TaxonomyIDs[i], split = ",")[[1]]
@@ -608,7 +639,7 @@ metascope_blast <- function(metascope_id_path,
     Biostrings::writeXStringSet(seqs, filepath = file.path(fastas_tmp_dir, paste0(sprintf("%04d", i), ".fa")))
   }
 
-                    
+
   # Create blast directory in tmp directory to save blast results in
   blast_tmp_dir <- file.path(tmp_dir, "blast")
   if(!dir.exists(blast_tmp_dir)) dir.create(blast_tmp_dir, recursive = TRUE)
