@@ -639,7 +639,7 @@ metascope_blast <- function(metascope_id_path,
       reads_to_sample = reads_to_sample[1:num_reads]
     }
     ids_n <- lapply(1:length(taxids), function(i) c(taxids[i], reads_to_sample[i]))
-    seqs_list <- lapply(ids_n, get_multi_seqs, bam_file = bam_file)
+    seqs_list <- lapply(ids_n, get_multi_seqs, bam_file = bam_file, NCBI_key = NCBI_key)
     seqs <- do.call(c, seqs_list)
     Biostrings::writeXStringSet(seqs, filepath = file.path(fastas_tmp_dir, paste0(sprintf("%04d", i), ".fa")))
   }
