@@ -109,7 +109,7 @@ get_seqs <- function(id, bam_file, n = 10, bam_seqs) {
 #' @inheritParams metascope_blast
 #'
 #' @return Biostrings format sequences
-get_multi_seqs <- function(ids_n, bam_file) {
+get_multi_seqs <- function(ids_n, bam_file, NCBI_key = NULL) {
   id = ids_n[1]
   print(id)
   n = as.numeric(ids_n[2])
@@ -119,6 +119,10 @@ get_multi_seqs <- function(ids_n, bam_file) {
   # Get sequence info (Genome Name) from bam file
   seq_info_df <- as.data.frame(Rsamtools::seqinfo(bam_file)) |>
     tibble::rownames_to_column("seqnames")
+  if (grepl("NC", seq_info_df$seqnames[1], fixed = TRUE)){ #Test for 
+    new_taxids <- find_accessions(seq_info_df$seqnames, NCBI_key, quiet = TRUE) |> lapply('[[',1)
+    seq_info_df$seqnames <- new_taxids
+  }
   allGenomes <- stringr::str_subset(seq_info_df$seqnames, id)
   # Sample one of the Genomes that match
   Genome <- sample(allGenomes, 1)
