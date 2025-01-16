@@ -15,6 +15,7 @@ reference:
    - download_refseq
    - mk_bowtie_index
    - mk_subread_index
+   - download_accessions
  - title: "MetaAlign"
    desc: "Align sequencing reads to indexed target genome sequences"
    contents:
@@ -60,6 +61,7 @@ reference:
     - blastn_results
     - blastn_single_result
     - check_blastn_exists
+    - blast_reassignment
     - get_seqs
     - taxid_to_name
 
