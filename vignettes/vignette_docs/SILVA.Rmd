@@ -10,8 +10,7 @@ output: html_document
 MetaScope is compatible with the SILVA 16S rRNA Database. At the time of writing, the [most recent update](https://www.arb-silva.de/) to SILVA is version 138.1 (released on August 27, 2020). These notes will supplement the main MetaScope pipeline as illustrated in the [vignette](https://wejlab.github.io/metascope-docs/articles/MetaScope_vignette.html).
 
 # SILVA Indices
-Currently, MetaScope is only functional with SILVA when using the premade Bowtie2 indices of SILVA 138.1 available [here](https://drive.google.com/drive/folders/1dS60VcYHDbAObKSi_oGoQuf7XFOejaKj?usp=drive_link). In this case,
-
+Currently, MetaScope is only functional with SILVA when using the premade Bowtie2 indices of SILVA 138.1 available [here](https://rutgers.box.com/s/njq1qc9bzawzs3a6513uihxxwgxu9qc5).
 # Accessions
 Before running any samples, you'll need to run `download_accessions()` with the argument `silva_taxonomy_database = TRUE`.
 

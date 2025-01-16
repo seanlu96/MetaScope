@@ -76,9 +76,9 @@ navbar:
       - text: "Introduction to MetaScope"
         href: articles/MetaScope_vignette.html
       - text: "Usage with SILVA 16S Database"
-        href: articles/docs/SILVA.html
+        href: articles/vignette_docs/SILVA.html
       - text: "Example MetaScope Script"
-        href: articles/docs/Example_Script.html
+        href: articles/vignette_docs/Example_Script.html
     - text: "Function Reference"
       href: reference/index.html
     - text: "Package News"
