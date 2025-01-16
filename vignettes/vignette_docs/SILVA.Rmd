@@ -7,15 +7,23 @@ output: html_document
 
 # The SILVA database
 
-MetaScope is compatible with the SILVA 16S rRNA Database. At the time of writing, the [most recent update](https://www.arb-silva.de/) to SILVA is version 138.1 (released on August 27, 2020). 
+MetaScope is compatible with the SILVA 16S rRNA Database. At the time of writing, the [most recent update](https://www.arb-silva.de/) to SILVA is version 138.1 (released on August 27, 2020). These notes will supplement the main MetaScope pipeline as illustrated in the [vignette](https://wejlab.github.io/metascope-docs/articles/MetaScope_vignette.html).
 
-**Important**
-If you want to use the `convert_animalcules_silva()` step, you'll need to use the premade Bowtie2 indices of SILVA 138.1 available [here](https://drive.google.com/drive/folders/1dS60VcYHDbAObKSi_oGoQuf7XFOejaKj?usp=drive_link).
+# SILVA Indices
+Currently, MetaScope is only functional with SILVA when using the premade Bowtie2 indices of SILVA 138.1 available [here](https://drive.google.com/drive/folders/1dS60VcYHDbAObKSi_oGoQuf7XFOejaKj?usp=drive_link). In this case,
 
+# Accessions
+Before running any samples, you'll need to run `download_accessions()` with the argument `silva_taxonomy_database = TRUE`.
+
+# Alignment
 You can follow the `align_target_bowtie` usage outlined in the MetaScope tutorial, replacing the `libs` parameter with the SILVA indices.
 
+# Identification
 When you reach the `metascope_id()` step, you will need to include the parameter `db = "silva"` in the function call to identify down to the genus level using the SILVA taxonomy identifiers. 
 
+# MetaBLAST
+
+You can use `metascope_blast()` to refine results from `metascope_id()`.
 
 All CSV outputs from `metascope_id()` can be compiled into a single MultiAssayExperiment object with the `convert_animalcules_silva()` function as shown here with false filenames:
 
