@@ -773,27 +773,46 @@ metascope_blast <- function(metascope_id_path,
 #' @export
 
 blast_reassignment <- function(metascope_blast_path, species_threshold, num_hits,
-                               blast_tmp_dir, out_dir, sample_name) {
-  # Create validated column to determine if reads should be reassigned to accession
+                               blast_tmp_dir, out_dir, sample_name,
+                               reassign_validated = FALSE,
+                               reassign_to_validated = TRUE) {
+
+  # Create Validated Column based on species thresholds
   metascope_blast_df <- data.table::fread(metascope_blast_path) |>
     tibble::as_tibble() |>
     dplyr::mutate(blast_validated = (!!dplyr::sym("species_percentage_hit") > species_threshold))
+  # Create Index for later reassignment
   metascope_blast_df$index <- rownames(metascope_blast_df) |> as.numeric()
+  # Tidy columns read_counts to read_count
   if ("read_counts" %in% colnames(metascope_blast_df)) {
     ind <- colnames(metascope_blast_df) == "read_counts"
     colnames(metascope_blast_df)[ind] <- "read_count"
   }
+
+  reassigned_metascope_blast <- metascope_blast_df
+
   blast_files <- list.files(blast_tmp_dir, full.names = TRUE)
-  # If num_hits is small
-  num_hits <- min(num_hits, nrow(metascope_blast_df))
-  test_indices <- which(!metascope_blast_df$blast_validated)
+
+  # Create vector of indices that have been reassigned
+  drop_indices <- c()
+
+  # test all indices if reassign_validated, otherwise only test unvalidated indices
+  if (reassign_validated) {
+    test_indices <- c(2:num_hits)
+  } else {
+    test_indices <- which(!metascope_blast_df$blast_validated)
+  }
+
+  # define helper function get_blast_summary
   get_blast_summary <- function(i) {
     blast_summary <-
       tryCatch(
         {
           blast_summary <- data.table::fread(blast_files[i]) |>
             tibble::as_tibble() |>
+            dplyr::mutate(species = paste0(!!dplyr::sym("genus"), " ", !!dplyr::sym("species"))) |>
             dplyr::group_by(!!dplyr::sym("qseqid")) |>
+            # Select lowest evalues
             dplyr::slice_min(!!dplyr::sym("evalue"), with_ties = TRUE) |>
             # Removing duplicate query num and query species
             dplyr::distinct(!!dplyr::sym("qseqid"), !!dplyr::sym("species"), .keep_all = TRUE) |>
@@ -802,9 +821,18 @@ blast_reassignment <- function(metascope_blast_path, species_threshold, num_hits
             dplyr::summarise("num_reads" = dplyr::n(), .groups="keep") |>
             dplyr::slice_max(order_by = !!dplyr::sym("num_reads"), with_ties = TRUE) |>
             dplyr::left_join(metascope_blast_df[seq_len(num_hits), ],
-                             by = dplyr::join_by("genus" == !!dplyr::sym("best_hit_genus"),
-                                                 "species" == !!dplyr::sym("best_hit_species"))) |>
-            dplyr::filter(!!dplyr::sym("blast_validated") == TRUE) |>
+                             by = dplyr::join_by("genus" == !!dplyr::sym("genus"),
+                                                 "species" == !!dplyr::sym("species"))) |>
+            # Do not reassign below metascope's current reassignment
+            dplyr::filter(!is.na(!!dplyr::sym("index"))) |>
+            dplyr::filter(!!dplyr::sym("index") < i)
+          # If reassign_to_validated, then only reassign reads to blast_validated accesions
+          if (reassign_to_validated) {
+            blast_summary <- blast_summary |>
+              dplyr::filter(!!dplyr::sym("blast_validated") == TRUE)
+          }
+          blast_summary <- blast_summary |>
+            dplyr::ungroup() |>
             dplyr::mutate(reassignment_proportion = !!dplyr::sym("num_reads") / sum(!!dplyr::sym("num_reads")),
                           reassigned_read_count = metascope_blast_df$read_count[i] * !!dplyr::sym("reassignment_proportion"),
                           reassigned_Proportion = metascope_blast_df$Proportion[i] * !!dplyr::sym("reassignment_proportion"),
@@ -828,42 +856,32 @@ blast_reassignment <- function(metascope_blast_path, species_threshold, num_hits
     return(blast_summary)
   }
 
-  all_blast_summaries <- plyr::alply(test_indices, 1,
-                                     get_blast_summary) |>
-    magrittr::set_names(paste0("X", test_indices))
-  drop_indices_PRE <- plyr::laply(all_blast_summaries,
-                                  function(x) nrow(x) > 0)
-  drop_indices_PRE_2 <- test_indices[drop_indices_PRE]
-  drop_indices <- drop_indices_PRE_2[drop_indices_PRE_2 != 1]
+  for (i in test_indices){
+    if (!metascope_blast_df$blast_validated[i]){
+      blast_summary <- get_blast_summary(i)
+      if (nrow(blast_summary) > 0) {
+        # Updated reassigned_metascope_blast df for every row in blast_summary
+        for (n in 1:nrow(blast_summary)) {
+          metascope_index <- blast_summary$index[n]
+          #print(reassigned_metascope_blast$read_count[metascope_index])
+          #print(blast_summary$reassigned_read_count[n])
+          reassigned_metascope_blast$read_count[metascope_index] <-
+            reassigned_metascope_blast$read_count[metascope_index] + blast_summary$reassigned_read_count[n]
+          reassigned_metascope_blast$Proportion[metascope_index] <-
+            reassigned_metascope_blast$Proportion[metascope_index] + blast_summary$reassigned_Proportion[n]
+          reassigned_metascope_blast$readsEM[metascope_index] <-
+            metascope_blast_df$readsEM[metascope_index] + blast_summary$readsEM[n]
+          reassigned_metascope_blast$EMProportion[metascope_index] <-
+            reassigned_metascope_blast$EMProportion[metascope_index] + blast_summary$EMProportion[n]
+          drop_indices <- append(drop_indices, i)
 
-  all_names <- c("read_count", "Proportion", "readsEM", "EMProportion")
-  summarize_unval <- function(i) {
-    this_blast_summary <- all_blast_summaries[[paste0("X", i)]]
-
-    summarize_reassignments <- function(n_ind) {
-      metascope_index <- this_blast_summary$index[n_ind]
-      init_list <- vector(mode = "list", length = length(all_names)) |>
-        magrittr::set_names(all_names)
-      output <- plyr::aaply(names(init_list), 1, function(x)
-        metascope_blast_df[metascope_index, x] +
-          this_blast_summary[n_ind, x]) |>
-        magrittr::set_names(all_names) |> as.data.frame()
-      return(output)
+        }
+      }
     }
-    output <- plyr::adply(seq_len(nrow(this_blast_summary)), 1,
-                          summarize_reassignments, .id = NULL) |>
-      as.data.frame() |>
-      dplyr::mutate("id" = this_blast_summary$index)
-    return(output)
   }
-  to_replace <- plyr::adply(drop_indices, 1, summarize_unval, .id = NULL) |>
-    dplyr::distinct() |> dplyr::arrange(!!dplyr::sym("id"))
-  reassigned_metascope_blast <- metascope_blast_df |> dplyr::select(-"index")
-  reassigned_metascope_blast[to_replace$id, all_names] <- to_replace[, all_names]
-  if (length(drop_indices) > 0) {
-    reassigned_metascope_blast <- reassigned_metascope_blast[-drop_indices, ]
-  }
-  # Clean up unused columns
+  reassigned_metascope_blast <- reassigned_metascope_blast[-drop_indices,] |>
+    dplyr::select(-"index")
+
   reassigned_metascope_blast <- reassigned_metascope_blast |>
     dplyr::select(-c("IDs", "TaxonomyIDs", "read_proportions",
                      "Proportion", "readsEM", "EMProportion")) |>
