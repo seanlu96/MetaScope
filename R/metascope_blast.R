@@ -774,9 +774,8 @@ metascope_blast <- function(metascope_id_path,
 
 blast_reassignment <- function(metascope_blast_path, species_threshold, num_hits,
                                blast_tmp_dir, out_dir, sample_name,
-                               reassign_validated = FALSE,
+                               reassign_validated = FALSE, 
                                reassign_to_validated = TRUE) {
-
   # Create Validated Column based on species thresholds
   metascope_blast_df <- data.table::fread(metascope_blast_path) |>
     tibble::as_tibble() |>
@@ -788,21 +787,21 @@ blast_reassignment <- function(metascope_blast_path, species_threshold, num_hits
     ind <- colnames(metascope_blast_df) == "read_counts"
     colnames(metascope_blast_df)[ind] <- "read_count"
   }
-
+  
   reassigned_metascope_blast <- metascope_blast_df
-
+  
   blast_files <- list.files(blast_tmp_dir, full.names = TRUE)
-
+  
   # Create vector of indices that have been reassigned
   drop_indices <- c()
-
+  
   # test all indices if reassign_validated, otherwise only test unvalidated indices
   if (reassign_validated) {
     test_indices <- c(2:min(num_hits, nrow(metascope_blast_df)))
   } else {
     test_indices <- which(!metascope_blast_df$blast_validated)
   }
-
+  
   # define helper function get_blast_summary
   get_blast_summary <- function(i) {
     blast_summary <-
@@ -828,7 +827,8 @@ blast_reassignment <- function(metascope_blast_path, species_threshold, num_hits
             dplyr::filter(!!dplyr::sym("index") < i)
           # If reassign_to_validated, then only reassign reads to blast_validated accesions
           if (reassign_to_validated) {
-            blast_summary <- blast_summary |>
+
+            blast_summary <- blast_summary |> 
               dplyr::filter(!!dplyr::sym("blast_validated") == TRUE)
           }
           blast_summary <- blast_summary |>
@@ -855,7 +855,6 @@ blast_reassignment <- function(metascope_blast_path, species_threshold, num_hits
       )
     return(blast_summary)
   }
-
   for (i in test_indices){
     if (!metascope_blast_df$blast_validated[i]){
       blast_summary <- get_blast_summary(i)
@@ -874,14 +873,12 @@ blast_reassignment <- function(metascope_blast_path, species_threshold, num_hits
           reassigned_metascope_blast$EMProportion[metascope_index] <-
             reassigned_metascope_blast$EMProportion[metascope_index] + blast_summary$EMProportion[n]
           drop_indices <- append(drop_indices, i)
-
         }
       }
     }
   }
   reassigned_metascope_blast <- reassigned_metascope_blast[-drop_indices,] |>
     dplyr::select(-"index")
-
   reassigned_metascope_blast <- reassigned_metascope_blast |>
     dplyr::select(-c("IDs", "TaxonomyIDs", "read_proportions",
                      "Proportion", "readsEM", "EMProportion")) |>
@@ -891,4 +888,3 @@ blast_reassignment <- function(metascope_blast_path, species_threshold, num_hits
   message("Results written to ", print_file)
   return(reassigned_metascope_blast)
 }
-
