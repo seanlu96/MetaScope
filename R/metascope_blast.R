@@ -798,7 +798,7 @@ blast_reassignment <- function(metascope_blast_path, species_threshold, num_hits
 
   # test all indices if reassign_validated, otherwise only test unvalidated indices
   if (reassign_validated) {
-    test_indices <- c(2:num_hits)
+    test_indices <- c(2:min(num_hits, nrow(metascope_blast_df)))
   } else {
     test_indices <- which(!metascope_blast_df$blast_validated)
   }
