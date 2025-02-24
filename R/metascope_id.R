@@ -409,12 +409,21 @@ metascope_id <- function(input_file, input_type = "csv.gz",
                                                   desiredTaxa = c("superkingdom", "phylum", "class",
                                                                   "order", "family", "genus", "species", "strain")),
                           1,function(x) paste0(x, collapse = ";"))
+    # Group taxids by species and redo genome names by species
+    species_names <- taxonomizr::getTaxonomy(taxids, sqlFile = accession_path,
+                                             desiredTaxa = "species")[,]
+    taxids <- taxonomizr::getId(species_names, sqlFile = accession_path)
+    genome_names <- apply(taxonomizr::getTaxonomy(taxids, sqlFile = accession_path,
+                                                  desiredTaxa = c("superkingdom", "phylum", "class",
+                                                                  "order", "family", "genus", "species", "strain")),
+                          1,function(x) paste0(x, collapse = ";"))
     # Accession ids for any unknown genomes (likely removed from db)
     unk_inds <- which(is.na(taxids))
     genome_names[unk_inds] <- paste("unknown genome; accession ID is",
                                     accessions[unk_inds])
     taxids[unk_inds] <- accessions[unk_inds]
-  } else if (db == "silva") {
+    #TODO: GROUP BY SPECIES
+  } else if (db == "silva") { 
     tax_id_all <- stringr::str_split(accessions, ";", n =2)
     taxids <- sapply(tax_id_all, `[[`, 1)
     genome_names <- sapply(tax_id_all, `[[`, 2)
@@ -422,6 +431,7 @@ metascope_id <- function(input_file, input_type = "csv.gz",
     mapped_rname <- stringr::str_split(mapped_rname, ";", n = 2) %>%
       sapply(`[[`, 1)
     accessions <- as.character(unique(mapped_rname))
+    #TODO: GROUP BY SPECIES
   } else if (db == "other") {
     tax_id_all <- dplyr::tibble(`Feature ID` = accessions) %>%
       dplyr::left_join(db_feature_table, by = "Feature ID")
