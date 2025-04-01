@@ -366,7 +366,9 @@ metascope_id <- function(input_file, input_type = "csv.gz",
                          update_bam = FALSE,
                          num_species_plot = NULL,
                          blast_fastas = FALSE, num_genomes = 100,
-                         num_reads = 50, quiet = TRUE)  {
+                         num_reads = 50, 
+                         group_by_taxa = "species",
+                         quiet = TRUE)  {
   out_base <- input_file %>% base::basename() %>% strsplit(split = "\\.") %>%
     magrittr::extract2(1) %>% magrittr::extract(1)
   out_file <- file.path(out_dir, paste0(out_base, ".metascope_id.csv"))
@@ -402,27 +404,20 @@ metascope_id <- function(input_file, input_type = "csv.gz",
   }
   read_names <- unique(mapped_qname)
   accessions <- as.character(unique(mapped_rname))
+  
+  # Let user decide which taxa level to group by
+  if (is.null(group_by_taxa)) {
+    group_by_taxa <- "species"
+  }
   if (db == "ncbi") {
     if (is.null(accession_path)) stop("Please provide a valid accession_path argument")
-    taxids <- taxonomizr::accessionToTaxa(accessions, sqlFile = accession_path)
-    genome_names <- apply(taxonomizr::getTaxonomy(taxids, sqlFile = accession_path,
-                                                  desiredTaxa = c("superkingdom", "phylum", "class",
-                                                                  "order", "family", "genus", "species", "strain")),
-                          1,function(x) paste0(x, collapse = ";"))
-    # Group taxids by species and redo genome names by species
-    species_names <- taxonomizr::getTaxonomy(taxids, sqlFile = accession_path,
-                                             desiredTaxa = "species")[,]
-    taxids <- taxonomizr::getId(species_names, sqlFile = accession_path)
-    genome_names <- apply(taxonomizr::getTaxonomy(taxids, sqlFile = accession_path,
-                                                  desiredTaxa = c("superkingdom", "phylum", "class",
-                                                                  "order", "family", "genus", "species", "strain")),
-                          1,function(x) paste0(x, collapse = ";"))
-    # Accession ids for any unknown genomes (likely removed from db)
-    unk_inds <- which(is.na(taxids))
-    genome_names[unk_inds] <- paste("unknown genome; accession ID is",
-                                    accessions[unk_inds])
-    taxids[unk_inds] <- accessions[unk_inds]
-    #TODO: GROUP BY SPECIES
+    taxonomy_indices <- tidyr::tibble(accessions) |>
+      dplyr::mutate(taxids = taxonomizr::accessionToTaxa(accessions, sqlFile = accession_path)) |>
+      dplyr::mutate(taxa_names = taxonomizr::getTaxonomy(taxids, sqlFile = accession_path,
+                                                         desiredTaxa = group_by_taxa)[,]) |>
+      dplyr::mutate(taxa_names = ifelse(is.na(taxa_names), paste0("unknown genome; accession ID is", accessions), taxa_names)) |>
+      dplyr::mutate(taxa_index = match(taxa_names, unique(taxa_names)))
+    
   } else if (db == "silva") { 
     tax_id_all <- stringr::str_split(accessions, ";", n =2)
     taxids <- sapply(tax_id_all, `[[`, 1)
@@ -439,16 +434,31 @@ metascope_id <- function(input_file, input_type = "csv.gz",
     genome_names <- tax_id_all %>% dplyr::select(2) %>% unlist() %>%
       unname()
   }
-  unique_taxids <- unique(taxids)
-  taxid_inds <- match(taxids, unique_taxids)
-  unique_genome_names <- genome_names[!duplicated(taxid_inds)]
-  if (!quiet) message("\tFound ", length(unique_taxids),
-                      " unique taxa")
+  
+  
   # Make an aligment matrix (rows: reads, cols: unique taxids)
   if (!quiet) message("Setting up the EM algorithm")
   qname_inds <- match(mapped_qname, read_names)
-  rname_inds <- match(mapped_rname, accessions)
-  rname_tax_inds <- taxid_inds[rname_inds] #accession to taxid
+  if (db == "ncbi") {
+    rname_tax_inds <- taxonomy_indices$taxa_index[match(mapped_rname, taxonomy_indices$accessions)]
+    if (!quiet) message("\tFound ", length(taxonomy_indices$taxa_index),
+                        " unique taxa")
+    unique_taxids <- taxonomy_indices |>
+                        dplyr::group_by(taxa_index) |>
+                        dplyr::slice(which.min(taxids)) |>
+                        dplyr::ungroup() |> 
+                        dplyr::select(taxids) |>
+                        as.vector()
+    unique_genome_names <- taxonomy_indices |>
+                              dplyr::group_by(taxa_index) |>
+                              dplyr::slice(which.min(taxa_names)) |>
+                              dplyr::ungroup() |> 
+                              dplyr::select(taxa_names) |>
+                              as.vector()
+  }
+  else {
+    # Do something here in case the db isn't ncbi
+  }
   # Order based on read names
   rname_tax_inds <- rname_tax_inds[order(qname_inds)]
   cigar_strings <- mapped_cigar[order(qname_inds)]
