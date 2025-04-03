@@ -38,6 +38,7 @@ reference:
    desc: "BLAST assigned reads against the NCBI nucleotide database to check read identity."
    contents:
      - metascope_blast
+     - blast_reassignment
  - title: "MetaCombine"
    desc: "Aggregate samples into a MultiAssayExperiment compatible with the animalcules package"
    contents:
@@ -61,7 +62,6 @@ reference:
     - blastn_results
     - blastn_single_result
     - check_blastn_exists
-    - blast_reassignment
     - get_seqs
     - taxid_to_name
 
@@ -75,6 +75,8 @@ navbar:
       menu:
       - text: "Introduction to MetaScope"
         href: articles/MetaScope_vignette.html
+      - text: "Publicly Hosted Indices"
+        href: articles/vignette_docs/publicly_hosted_indices_and_accessions.html
       - text: "Usage with SILVA 16S Database"
         href: articles/vignette_docs/SILVA.html
       - text: "Example MetaScope Script"

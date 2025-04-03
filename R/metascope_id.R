@@ -292,7 +292,7 @@ locations <- function(which_taxid, which_genome,
 #' @param maxitsEM The maximum number of EM iterations, regardless of whether
 #'   the convEM is below the threshhold. Default set at \code{50}. If set at
 #'   \code{0}, the algorithm skips the EM step and summarizes the .bam file 'as
-#'   is'
+#'   is'.
 #' @param blast_fastas Logical, whether or not to output fasta files for MetaBlast.
 #' Default is \code{FALSE}.
 #' @param num_genomes Number of genomes to output fasta files for MetaBlast.
@@ -303,7 +303,7 @@ locations <- function(which_taxid, which_genome,
 #'   Default is \code{NULL}, which saves coverage plots for the ten most highly
 #'   abundant species.
 #' @param update_bam Whether to update BAM file with new read assignments.
-#' Default is \code{FALSE}. If \code{TRUE}, requires \code{input_type = TRUE}
+#' Default is \code{FALSE}. If \code{TRUE}, requires \code{input_type = "bam"}
 #' such that a BAM file is the input to the function.
 #' @param quiet Turns off most messages. Default is \code{TRUE}.
 #' @param tmp_dir Path to a directory to which bam and updated bam files can be saved.

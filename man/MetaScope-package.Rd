@@ -21,13 +21,9 @@ Useful links:
 
 Authors:
 \itemize{
-  \item Rahul Varki \email{rvarki@bu.edu}
+  \item Sean Lu \email{sl1729@njms.rutgers.edu} (\href{https://orcid.org/0009-0007-8005-6125}{ORCID})
+  \item Rahul Varki \email{rvarki@bu.edu} (\href{https://orcid.org/0009-0003-5721-9484}{ORCID})
   \item W. Evan Johnson \email{wej@bu.edu} (\href{https://orcid.org/0000-0002-6247-6595}{ORCID})
-}
-
-Other contributors:
-\itemize{
-  \item Howard Fan \email{hjfan@bu.edu} [contributor]
 }
 
 }

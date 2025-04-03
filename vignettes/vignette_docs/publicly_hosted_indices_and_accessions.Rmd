@@ -1,0 +1,54 @@
+---
+title: "Publicly Hosted MetaScope Databases and Bowtie 2 Indices"
+author: "Sean Lu"
+date: "2025-01-30"
+output: html_document
+---
+
+# Introduction
+
+To mitigate the effort of downloading reference genomes, taxonomy identifier databases, and constructing Bowtie 2 indices, we provide pre-compiled versions as described below. Current versions of all of these files can be constructed with MetaScope's functions if users choose not to download the files here.
+
+# Link to [Box Drive](https://rutgers.box.com/s/nar5z3g02r2tz9lr3mdqwq3rcekh4fca)
+
+All databases are hosted centrally on a [Box drive](https://rutgers.box.com/s/nar5z3g02r2tz9lr3mdqwq3rcekh4fca) for download. A brief explanation of available files follows:
+
+# Taxonomy Annotation Database (`2024_Accession_Taxa`)
+
+This file is a zip compressed folder containing a database of taxonomy information prepared with `download_accessions()` as part of MetaScope's MetaRef module.
+
+These files are *required* for MetaScope's MetaID module and MetaBLAST module. (Note that MetaBLAST is an optional module). 
+
+It is *highly recommended* that all users download this database if they are using NCBI or SILVA databases. Otherwise, users will need to run ` MetaScope::download_accessions()` to obtain this database.
+
+# BLASTn 16S Database (`metascope_blast_indices/2024_blast_16S`)
+
+This folder contains BLASTn files for use with the MetaBLAST module. The MetaBLAST is an optional, yet highly recommended, component of the MetaScope workflow.
+
+This folder contains the necessary BLASTn indices to use BLASTn against the NCBI 16S ribosomal RNA database.
+
+Note: The `db_path` argument for 'metascope_blast()' should included as follows:
+
+```{r, eval = FALSE}
+metascope_blast(
+  ..., # Necessary parameters here
+  db_path = "/path/to/file/16SribosomalRNA" # Alter the db_path accordingly
+)
+```
+
+# MetaScope Bowtie2 Indices (`metascope_bowtie2_indices`)
+
+Users of the MetaScope pipeline can easily and efficiently obtain reference genomes of interest using the `download_refseq()` function. However, the additional step of creating Bowtie 2 indices from these genomes to align them with sample data can add hours to these initial steps.
+
+This folder contains various pre-built bowtie2 indices that can be used with the the `align_target_bowtie()` and `filter_host_bowtie` functions. The user's *local* path to these indices should be supplied to the `lib_dir` argument of those functions.
+
+The following indices are available in [Box drive](https://rutgers.box.com/s/nar5z3g02r2tz9lr3mdqwq3rcekh4fca):
+
+1. `2024_ncbi_16S` The NCBI 16S ribosomal RNA database
+2. `Greenegenes 13_8` The Greengenes 13.8 16S ribosomal RNA database
+3. `MetaScope RefSeq 2023` The entire bacteria, fungi, homo_sapiens, human_T2T, mus_musculus, and viruses refseq nucleotide database downloaded via `download_refseq()` in 2023
+4. `MetaScope RefSeq 2022` The entire bacteria, fungi, human, mouse, and viruses refseq nucleotide database downloaded via `download_refseq()` in 2022
+5. `MetaScope RefSeq 2020` The entire bacteria, fungi, human/mouse, Phi X 174, and viral refseq nucleotide database downloaded via `download_refseq()` in 2020
+6. `PathoScope RefSeq 2018` The entire  bacteria, mouse, and viral refseq nucleotide database downloaded via PathoScope 2.0 software in 2018
+7. `PathoScope RefSeq 2015` The entire  bacteria, fungi, human/mouse, phix174, and viral refseq nucleotide database downloaded via PathoScope 2.0 software in 2015
+8. `SILVA 138.1` The SILVA 138.1 16S ribosomal RNA database

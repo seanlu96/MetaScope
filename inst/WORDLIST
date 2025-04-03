@@ -82,6 +82,7 @@ metatranscriptomic
 microbiome
 mk
 multithreading
+musculus
 nBestLocations
 nsubreads
 nt
@@ -91,6 +92,7 @@ outpute
 parallelization
 parallelize
 pathoscope
+phix
 phredOffset
 pre
 premade
@@ -102,6 +104,7 @@ redownloading
 refseq
 reheader
 reheaders
+ribosomal
 rnames
 sam
 sampleName

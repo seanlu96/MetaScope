@@ -57,10 +57,10 @@ Defaults to \code{dirname(input_file)}.}
 \item{maxitsEM}{The maximum number of EM iterations, regardless of whether
 the convEM is below the threshhold. Default set at \code{50}. If set at
 \code{0}, the algorithm skips the EM step and summarizes the .bam file 'as
-is'}
+is'.}
 
 \item{update_bam}{Whether to update BAM file with new read assignments.
-Default is \code{FALSE}. If \code{TRUE}, requires \code{input_type = TRUE}
+Default is \code{FALSE}. If \code{TRUE}, requires \code{input_type = "bam"}
 such that a BAM file is the input to the function.}
 
 \item{num_species_plot}{The number of genome coverage plots to be saved.

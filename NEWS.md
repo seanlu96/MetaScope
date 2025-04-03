@@ -5,6 +5,9 @@
 * All dependencies on taxize have now been removed as the package has been deprecated on CRAN for the foreseeable future. We have now shifted our dependency for NCBI lookups to the `taxonomizr` database. The vignette and example script on our website have been updated to reflect this. See new function `download_accessions()`
 * Increased efficiency of MetaBlast module
 
+## Minor changes
+* Added publicly hosted files to our [website](https://wejlab.github.io/metascope-docs/articles/vignette_docs/publicly_hosted_indices_and_accessions.html)
+
 ## Bug fixes
 * Changed dependency of data.table to properly compress files.
 
@@ -41,5 +44,3 @@
 
 ## Major Changes
 * Submitted to Bioconductor
-
-## Minor Changes
