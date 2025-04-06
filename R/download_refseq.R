@@ -78,7 +78,7 @@ get_speciestab <- function(children_list, refseq_table, taxon,
       refseq_table$organism_name) %in% tolower(taxon)), ]
   } else {
     species_table <- refseq_table[which(tolower(
-    refseq_table$organism_name) %in% tolower(children_list)), ]
+      refseq_table$organism_name) %in% tolower(children_list)), ]
   }
   # Reduce table size based on reference or representative
   if (representative) reference <- TRUE
@@ -156,7 +156,7 @@ download_genomes <- function(species_table, taxon, patho_out, compress,
             message("Number of Genomes Downloaded: ", i, "/",
                     total_genomes, " (",
                     round(100 * i / total_genomes, 2), "%)")
-            }
+          }
           rid <- names(BiocFileCache::bfcadd(bfc, genome_file, location))
         }
         if (!isFALSE(BiocFileCache::bfcneedsupdate(bfc, rid))) {
@@ -173,10 +173,9 @@ download_genomes <- function(species_table, taxon, patho_out, compress,
       in_con <- file(destination, open = "rb")
       ref <- gzcon(in_con) %>% base::readLines()
       close(in_con)
-      ref %>% data.table::as.data.table() %>%
-        data.table::fwrite(file = combined_fasta, append = TRUE,
-                           quote = FALSE, sep = " ", compress = "gzip",
-                           col.names = FALSE, row.names = FALSE)
+      out_con <- gzfile(combined_fasta, open = "a")  # "a" for append
+      writeLines(ref, out_con)
+      close(out_con)
       # Format for pathoscope and write to file
       if (patho_out) {
         # Identify accessions
@@ -187,11 +186,9 @@ download_genomes <- function(species_table, taxon, patho_out, compress,
         ref[ind] <- paste(">ti|", species_table[i, ]$taxid, "|org|",
                           gsub(" ", "_", species_table[i, ]$organism_name),
                           "|accession|", accession, sep = "")
-        ref %>% data.table::as.data.table() %>%
-          data.table::fwrite(file = combined_fasta_patho,
-                             append = TRUE, quote = FALSE, sep = " ",
-                             compress = "gzip", col.names = FALSE,
-                             row.names = FALSE)
+        out_con <- gzfile(combined_fasta_patho, open = "a")  # "a" for append
+        writeLines(ref, out_con)
+        close(out_con)
       }
     }, error = function(e) message(conditionMessage(e)))
   }
