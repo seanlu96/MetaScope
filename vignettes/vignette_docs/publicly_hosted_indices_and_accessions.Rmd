@@ -17,24 +17,7 @@ All databases are hosted centrally on a [Box drive](https://rutgers.box.com/s/na
 
 This file is a zip compressed folder containing a database of taxonomy information prepared with `download_accessions()` as part of MetaScope's MetaRef module.
 
-These files are *required* for MetaScope's MetaID module and MetaBLAST module. (Note that MetaBLAST is an optional module). 
-
 It is *highly recommended* that all users download this database if they are using NCBI or SILVA databases. Otherwise, users will need to run ` MetaScope::download_accessions()` to obtain this database.
-
-# BLASTn 16S Database (`metascope_blast_indices/2024_blast_16S`)
-
-This folder contains BLASTn files for use with the MetaBLAST module. The MetaBLAST is an optional, yet highly recommended, component of the MetaScope workflow.
-
-This folder contains the necessary BLASTn indices to use BLASTn against the NCBI 16S ribosomal RNA database.
-
-Note: The `db_path` argument for 'metascope_blast()' should included as follows:
-
-```{r, eval = FALSE}
-metascope_blast(
-  ..., # Necessary parameters here
-  db_path = "/path/to/file/16SribosomalRNA" # Alter the db_path accordingly
-)
-```
 
 # MetaScope Bowtie2 Indices (`metascope_bowtie2_indices`)
 

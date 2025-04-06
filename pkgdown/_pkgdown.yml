@@ -34,11 +34,6 @@ reference:
    desc: "Reassign ambiguously mapped reads to probable source genome"
    contents:
      - metascope_id
- - title: "MetaBLAST"
-   desc: "BLAST assigned reads against the NCBI nucleotide database to check read identity."
-   contents:
-     - metascope_blast
-     - blast_reassignment
  - title: "MetaCombine"
    desc: "Aggregate samples into a MultiAssayExperiment compatible with the animalcules package"
    contents:
@@ -58,12 +53,6 @@ reference:
     - locations
     - filter_unmapped_reads
     - check_samtools_exists
-    - blast_result_metrics
-    - blastn_results
-    - blastn_single_result
-    - check_blastn_exists
-    - get_seqs
-    - taxid_to_name
 
 navbar:
   bg: dark

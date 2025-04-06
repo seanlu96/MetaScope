@@ -11,9 +11,7 @@ download_accessions(
   NCBI_accessions_database = TRUE,
   NCBI_accessions_name = "accessionTaxa",
   silva_taxonomy_database = TRUE,
-  silva_taxonomy_name = "all_silva_headers",
-  blast_16S_database = TRUE,
-  blast_16S_name = "16S_ribosomal_RNA"
+  silva_taxonomy_name = "all_silva_headers"
 )
 }
 \arguments{
@@ -40,12 +38,6 @@ Defaults to \code{TRUE}.}
 extension) to save SILVA taxonomy database.
 Defaults to the file supplied with the package,
 \code{"all_silva_headers.rds"}.}
-
-\item{blast_16S_database}{Download NCBI 16S Blast database? Defaults to
-\code{TRUE}.}
-
-\item{blast_16S_name}{Character string. Filename (without extension) to save
-SILVA taxonomy database. Defaults to \code{"16S_ribosomal_RNA"}.}
 }
 \value{
 Exports database(s) with names and to location specified by the user.
@@ -67,9 +59,7 @@ MetaBLAST modules. This package relies on the \code{taxonomizr} package.
     NCBI_accessions_database = TRUE,
     NCBI_accessions_name = "accessionTaxa.sql",
     silva_taxonomy_database = TRUE,
-    silva_taxonomy_name = "all_silva_headers.rds",
-    blast_16S_database = TRUE,
-    blast_16S_name = "16S_ribosomal_RNA")
+    silva_taxonomy_name = "all_silva_headers.rds")
 }
 
 }

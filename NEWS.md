@@ -1,15 +1,7 @@
-# Development version
+# MetaScope 1.7.4 (Bioc 3.21)
 
 ## Major changes
-* Changed name of `demultiplex()` to `meta_demultiplex()`
-* All dependencies on taxize have now been removed as the package has been deprecated on CRAN for the foreseeable future. We have now shifted our dependency for NCBI lookups to the `taxonomizr` database. The vignette and example script on our website have been updated to reflect this. See new function `download_accessions()`
-* Increased efficiency of MetaBlast module
-
-## Minor changes
-* Added publicly hosted files to our [website](https://wejlab.github.io/metascope-docs/articles/vignette_docs/publicly_hosted_indices_and_accessions.html)
-
-## Bug fixes
-* Changed dependency of data.table to properly compress files.
+* All MetaBLAST functionality and references removed.
 
 # MetaScope 1.3.7 (Bioc 3.19)
 

@@ -20,10 +20,7 @@ You can follow the `align_target_bowtie` usage outlined in the MetaScope tutoria
 # Identification
 When you reach the `metascope_id()` step, you will need to include the parameter `db = "silva"` in the function call to identify down to the genus level using the SILVA taxonomy identifiers. 
 
-# MetaBLAST
-
-You can use `metascope_blast()` to refine results from `metascope_id()`.
-
+# Condense results
 All CSV outputs from `metascope_id()` can be compiled into a single MultiAssayExperiment object with the `convert_animalcules_silva()` function as shown here with false filenames:
 
 ```{R, eval = FALSE}

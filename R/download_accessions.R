@@ -30,10 +30,6 @@ getExtension <- function(file){
 #'   extension) to save SILVA taxonomy database.
 #'   Defaults to the file supplied with the package,
 #'   \code{"all_silva_headers.rds"}.
-#' @param blast_16S_database Download NCBI 16S Blast database? Defaults to
-#'   \code{TRUE}.
-#' @param blast_16S_name Character string. Filename (without extension) to save
-#'   SILVA taxonomy database. Defaults to \code{"16S_ribosomal_RNA"}.
 #'
 #' @return Exports database(s) with names and to location specified by the user.
 #'
@@ -48,9 +44,7 @@ getExtension <- function(file){
 #'     NCBI_accessions_database = TRUE,
 #'     NCBI_accessions_name = "accessionTaxa.sql",
 #'     silva_taxonomy_database = TRUE,
-#'     silva_taxonomy_name = "all_silva_headers.rds",
-#'     blast_16S_database = TRUE,
-#'     blast_16S_name = "16S_ribosomal_RNA")
+#'     silva_taxonomy_name = "all_silva_headers.rds")
 #' }
 #'
 
@@ -60,9 +54,7 @@ download_accessions <- function(ind_dir,
                                 NCBI_accessions_database = TRUE,
                                 NCBI_accessions_name = "accessionTaxa",
                                 silva_taxonomy_database = TRUE,
-                                silva_taxonomy_name = "all_silva_headers",
-                                blast_16S_database = TRUE,
-                                blast_16S_name = "16S_ribosomal_RNA") {
+                                silva_taxonomy_name = "all_silva_headers") {
   if (NCBI_accessions_database) {
     message("Downloading NCBI accessions database")
     if (!identical(getExtension(NCBI_accessions_name), "sql")) {
@@ -78,12 +70,6 @@ download_accessions <- function(ind_dir,
       NCBI_accessions_name <- paste0(silva_taxonomy_name, ".rds")
     }
     destination <- paste(ind_dir, silva_taxonomy_name, sep = "/")
-    utils::download.file(location, destination)
-  }
-  if (blast_16S_database) {
-    message("Downloading BLAST 16S rRNA database")
-    location <- "https://ftp.ncbi.nlm.nih.gov/blast/db/16S_ribosomal_RNA.tar.gz"
-    destination <- paste(ind_dir, blast_16S_name, sep = "/")
     utils::download.file(location, destination)
   }
 

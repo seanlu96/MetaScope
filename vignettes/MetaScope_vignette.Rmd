@@ -37,7 +37,7 @@ MetaScope is a complete metagenomics profiling package that can accurately ident
 
 The major workflow of MetaScope is delineated below. It is composed of core modules that are formed by groups  of functions.
 
-![Figure 1. The MetaScope workflow and its associated modules with function descriptions. The MetaRef, MetaAlign, MetaFilter, and MetaID modules form the backbone of package operation, whereas the MetaDemultiplex, MetaBLAST, and MetaCombine modules are complementary to the core package functionality.](MetaScope_Workflow.png)
+![Figure 1. The MetaScope workflow and its associated modules with function descriptions. The MetaRef, MetaAlign, MetaFilter, and MetaID modules form the backbone of package operation, whereas the MetaDemultiplex and MetaCombine modules are complementary to the core package functionality.](MetaScope_Workflow.png)
 
 The core modules are as follows:
 1. **MetaDemultiplex:** Obtain non-barcoded sequencing reads
@@ -45,14 +45,13 @@ The core modules are as follows:
 3. **MetaAlign:** Align sequencing reads to indexed target genome sequences
 4. **MetaFilter:** Remove reads mapped to indexed host genome sequences
 5. **MetaID:** Reassign ambiguously mapped reads to probable source genome
-6. **MetaBLAST:** BLAST assigned reads against the NCBI nucleotide database to check identity
-7. **MetaCombine:** Aggregate samples into a MultiAssayExperiment compatible with the `animalcules` R package.
+6. **MetaCombine:** Aggregate samples into a MultiAssayExperiment compatible with the `animalcules` R package.
 
 There are two sub-workflows that are included in the package, as seen in Figure 1: the Rbowtie2 and the Rsubread workflow. The major difference is that the functions in the MetaRef, MetaAlign, and MetaFilter modules differ by the aligner utilized. 
 
 The Rbowtie2 functions utilize the [Bowtie2](https://www.nature.com/articles/nmeth.1923) aligner (Langmead 2012) whereas the [Rsubread](https://academic.oup.com/nar/article/47/8/e47/5345150) functions utilize the Rsubread aligner (Liao 2019). The nuances of how to use each function can be found by looking at each function's help manual (R command: `?<name of function>`). For reference, PathoScope 2.0 uses the Bowtie2 aligner in its workflow.
 
-In this vignette, we will analyze the mock data provided in the package via the Rbowtie2 sub-workflow. We will utilize all of the core modules in sequential order. We will make mention of the equivalent Rsubread function whenever an Rbowtie2 function is being used. For the purposes of this example, MetaBLAST and MetaCombine modules will be omitted.
+In this vignette, we will analyze the mock data provided in the package via the Rbowtie2 sub-workflow. We will utilize all of the core modules in sequential order. We will make mention of the equivalent Rsubread function whenever an Rbowtie2 function is being used. For the purposes of this example, the MetaCombine module will be omitted.
 
 ## Installation
 
@@ -113,7 +112,7 @@ The `download_refseq()` function automatically extracts custom reference genome 
 
 A reference of taxonomy reference identifiers (e.g. NCBI accessions) is critical for fully identifying microbes with the MetaScope pipeline. This step should be completed ONCE, PRIOR TO RUNNING ANY AND ALL SAMPLES with the `download_accessions()` function. For an example of how to make a typical database for all host and filter genomes in your sample, please see the [example script](https://wejlab.github.io/metascope-docs/articles/docs/Example_Script.html) on our website.
 
-If using the SILVA 16S database, NCBI nucleotide or RefSeq database, or NCBI BLAST 16S database, you can use `download_accessions()` with the following arguments:
+If using the SILVA 16S database, NCBI nucleotide or RefSeq database, you can use `download_accessions()` with the following arguments:
 
 ```{R eval = FALSE}
 download_accessions(
@@ -125,10 +124,7 @@ download_accessions(
   NCBI_accessions_name = "accessionTaxa.sql",
   # For SILVA 16S database
   silva_taxonomy_database = TRUE,
-  silva_taxonomy_name = "all_silva_headers.rds",
-  # For BLAST 16S database
-  blast_16S_database = TRUE,
-  blast_16S_name = "16S_ribosomal_RNA"
+  silva_taxonomy_name = "all_silva_headers.rds"
 )
 ```
 
