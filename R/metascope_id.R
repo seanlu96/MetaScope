@@ -451,7 +451,7 @@ metascope_id <- function(input_file, input_type = "csv.gz",
                         as.vector()
     unique_genome_names <- taxonomy_indices |>
                               dplyr::group_by(taxa_index) |>
-                              dplyr::slice(which.min(taxa_names)) |>
+                              dplyr::slice(which.min(taxids)) |>
                               dplyr::ungroup() |> 
                               dplyr::select(taxa_names) |>
                               as.vector()
