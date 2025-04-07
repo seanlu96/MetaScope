@@ -443,18 +443,14 @@ metascope_id <- function(input_file, input_type = "csv.gz",
     rname_tax_inds <- taxonomy_indices$taxa_index[match(mapped_rname, taxonomy_indices$accessions)]
     if (!quiet) message("\tFound ", length(taxonomy_indices$taxa_index),
                         " unique taxa")
-    unique_taxids <- taxonomy_indices |>
-                        dplyr::group_by(taxa_index) |>
-                        dplyr::slice(which.min(taxids)) |>
-                        dplyr::ungroup() |> 
-                        dplyr::select(taxids) |>
-                        as.vector()
-    unique_genome_names <- taxonomy_indices |>
-                              dplyr::group_by(taxa_index) |>
-                              dplyr::slice(which.min(taxids)) |>
-                              dplyr::ungroup() |> 
-                              dplyr::select(taxa_names) |>
-                              as.vector()
+    unique_tax_data <- taxonomy_indices |>
+      dplyr::mutate(taxid_rank = suppressWarnings(as.numeric(taxids))) |>
+      dplyr::group_by(taxa_index) |>
+      dplyr::slice(which.min(ifelse(is.na(taxid_rank), Inf, taxid_rank))) |>
+      dplyr::ungroup()
+    
+    unique_taxids <- unique_tax_data$taxids
+    unique_genome_names <- unique_tax_data$taxa_names
   }
   else {
     # Do something here in case the db isn't ncbi
