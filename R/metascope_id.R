@@ -75,13 +75,13 @@ get_alignscore <- function(aligner, cigar_strings, count_matches, scores,
     num_match <- unlist(vapply(cigar_strings, count_matches,
                                USE.NAMES = FALSE, double(1)))
     alignment_scores <- num_match - scores
-    scaling_factor <- 100.0 / max(alignment_scores)
+    scaling_factor <- 1.0 / max(alignment_scores)
     relative_alignment_scores <- alignment_scores - min(alignment_scores)
     exp_alignment_scores <- exp(relative_alignment_scores * scaling_factor)
   } else if (identical(aligner, "bowtie2")) {
     # Bowtie2 alignment scores: AS value + read length (qwidths)
     alignment_scores <- scores + qwidths
-    scaling_factor <- 100.0 / max(alignment_scores)
+    scaling_factor <- 1.0 / max(alignment_scores)
     relative_alignment_scores <- alignment_scores - min(alignment_scores)
     exp_alignment_scores <- exp(relative_alignment_scores * scaling_factor)
   } else if (identical(aligner, "other")) {
@@ -91,8 +91,9 @@ get_alignscore <- function(aligner, cigar_strings, count_matches, scores,
   return(exp_alignment_scores)
 }
 
+
 get_assignments <- function(combined, convEM, maxitsEM, unique_taxids,
-                            unique_genome_names, update_bam = TRUE, input_file, quiet) {
+                            unique_genome_names, update_bam = TRUE, input_file, priors_df, quiet) {
   combined$index <- seq.int(1, nrow(combined))
   input_distinct <- dplyr::distinct(combined, .data$qname, .data$rname,
                                     .keep_all = TRUE)
@@ -107,7 +108,20 @@ get_assignments <- function(combined, convEM, maxitsEM, unique_taxids,
   gammas <- Matrix::sparseMatrix(qname_inds_2, rname_tax_inds_2, x = scores_2)
   pi_old <- rep(1 / nrow(gammas), ncol(gammas))
   pi_new <- theta_new <- Matrix::colMeans(gammas)
-  conv <- max(abs(pi_new - pi_old) / pi_old)
+  if (!is.null(priors_df)) {
+    weights <- tidyr::as_tibble(unique_genome_names) |> 
+      dplyr::left_join(priors_df, by = dplyr::join_by(value == species)) |>
+      tidyr::replace_na(replace = list(prior_weights = 0))
+    unique_reads <- weights$prior_weights * max(combined$qname)
+    exp_weights <- exp(weights$prior_weights)
+    #weighted_pi_new <- pi_new + weights / (1 + weights)
+    posterior <- pi_new * exp_weights
+    pi_new <- posterior
+  } else {
+    unique_reads = 0
+  }
+  epsilon = 1e-8
+  conv <- max(abs(pi_new - pi_old) / (pi_old + epsilon))
   it <- 0
   if (!quiet) message("Starting EM iterations")
   while (conv > convEM && it < maxitsEM) {
@@ -120,12 +134,12 @@ get_assignments <- function(combined, convEM, maxitsEM, unique_taxids,
     weighted_gamma_sums <- Matrix::rowSums(weighted_gamma)
     gammas_new <- weighted_gamma / weighted_gamma_sums
     # Maximization step: proportion of reads to each genome
-    pi_new <- Matrix::colMeans(gammas_new)
-    theta_new_num <- (Matrix::colSums(y_ind_2 * gammas_new) + 1)
+    pi_new <- (Matrix::colSums(gammas_new) + unique_reads) / (sum(Matrix::colSums(gammas_new)) + sum(unique_reads))
+    theta_new_num <- (Matrix::colSums(y_ind_2 * gammas_new) + 1) 
     theta_new <- theta_new_num / (nrow(gammas_new) + 1)
     # Check convergence
     it <- it + 1
-    conv <- max(abs(pi_new - pi_old) / pi_old, na.rm = TRUE)
+    conv <- max(abs(pi_new - pi_old) / (pi_old + epsilon), na.rm = TRUE)
     pi_old <- pi_new
     if (!quiet) message(c(it, " ", conv))
   }
@@ -157,7 +171,7 @@ get_assignments <- function(combined, convEM, maxitsEM, unique_taxids,
                                   hits_ind = hits_ind) %>%
     dplyr::arrange(dplyr::desc(.data$read_count))
   if (!quiet) message("Found reads for ", nrow(results_tibble), " genomes")
-
+  
   return(list(results_tibble, combined_distinct, combined_single))
 }
 
@@ -360,6 +374,7 @@ metascope_id <- function(input_file, input_type = "csv.gz",
                          db = "ncbi",
                          db_feature_table = NULL,
                          accession_path = NULL,
+                         priors_df = NULL, 
                          tmp_dir = dirname(input_file),
                          out_dir = dirname(input_file),
                          convEM = 1 / 10000, maxitsEM = 25,
@@ -475,7 +490,7 @@ metascope_id <- function(input_file, input_type = "csv.gz",
                                "rname" = rname_tax_inds,
                                "scores" = exp_alignment_scores)
   results <- get_assignments(combined, convEM, maxitsEM, unique_taxids,
-                             unique_genome_names, quiet = quiet)
+                             unique_genome_names, quiet = quiet, priors_df = priors_df)
   metascope_id_file <- results[[1]] %>% dplyr::select("TaxonomyID", "Genome",
                                                       "read_count", "Proportion",
                                                       "readsEM", "EMProportion")
