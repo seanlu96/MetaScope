@@ -23,7 +23,7 @@ containing the sample IDs. These should be the same as the
 \code{meta_counts} root filenames.}
 
 \item{end_string}{The end string used at the end of the metascope_id files.
-Default is ".metascope_id.csv".}
+Default is "-sam-report.tsv".}
 }
 \value{
 Returns a MultiAssay Experiment file of combined sample counts data.

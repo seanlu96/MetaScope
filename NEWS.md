@@ -1,3 +1,9 @@
+# MetaScope 1.9.0 (Bioc 3.22)
+
+## Bug Fixes
+* Fixed filter compression to take a pre-formatted character string in csv format
+* Fixed minor issues in convert_animalcules() when unlinked TIDs are present
+
 # MetaScope 1.7.4 (Bioc 3.21)
 
 ## Major changes

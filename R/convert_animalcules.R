@@ -75,8 +75,7 @@ create_MAE <- function(annot_path, which_annot_col,
 
 # Read in the MetaScope_id CSVs
 read_in_id <- function(path_id_counts, end_string, which_annot_col) {
-  name_file <- utils::tail(stringr::str_split(path_id_counts, "/")[[1]],
-                           n = 1)
+  name_file <- basename(path_id_counts)
   readr::read_csv(path_id_counts, show_col_types = FALSE) %>%
     dplyr::filter(!is.na(.data$TaxonomyID)) %>%
     dplyr::select(.data$read_count, .data$TaxonomyID) %>%
@@ -104,13 +103,19 @@ class_taxon <- function(taxon, accession_path) {
 # Function written to account for accessions that weren't identified
 # in metascope_id step
 fill_in_missing <- function(combined_pre, accession_path) {
+  NAs <- "NA;NA;NA;NA;NA;NA;NA;NA"
   na_ind <- combined_pre$TaxonomyID %>%
     as.double() %>% is.na() %>% which() %>% suppressWarnings()
   if(length(na_ind) > 0) {
     acc_list <- combined_pre$TaxonomyID[na_ind]
     result <- acc_list %>%
       find_accessions(quiet = TRUE, accession_path = accession_path) %>%
+      stats::setNames(acc_list) %>%
       plyr::aaply(1, function(x) x[1]) %>% unname()
+    if (NAs %in% result) {
+      na_ind_2 <- which(result %in% NAs)
+      result[na_ind_2] <- acc_list[na_ind_2]
+    }
     combined_pre$TaxonomyID[na_ind] <- result
   }
   return(combined_pre)
@@ -218,8 +223,8 @@ convert_animalcules <- function(meta_counts, annot_path, which_annot_col,
     dplyr::mutate(sample = stringr::str_remove_all(sample, ".csv")) %>%
     dplyr::select("read_count", "TaxonomyID", "sample") %>%
     tidyr::pivot_wider(
-      id_cols = .data$TaxonomyID, names_from = .data$sample,
-      values_from = .data$read_count, values_fill = 0, id_expand = TRUE)
+      id_cols = "TaxonomyID", names_from = "sample",
+      values_from = "read_count", values_fill = 0, id_expand = TRUE)
   # Which entries are not numeric, and try running them through genbank2uid
   combined_list <- fill_in_missing(combined_pre, accession_path) %>%
     dplyr::mutate("TaxonomyID" = as.numeric(.data$TaxonomyID))

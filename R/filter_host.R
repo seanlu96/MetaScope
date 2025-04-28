@@ -47,7 +47,7 @@ mk_interim_fastq <- function(reads_bam, read_loc, YS, quiet) {
     Rsamtools::scanBam(bf_init, param = Rsamtools::ScanBamParam(
       what = "qname"))[[1]]$qname %>% unique()
   init_df <- dplyr::tibble("Header" = unname(unlist(allqname))) %>%
-    dplyr::distinct(.data$Header, .keep_all = TRUE)
+    dplyr::distinct("Header", .keep_all = TRUE)
   # Define BAM file with smaller yield size
   bf <- Rsamtools::BamFile(reads_bam, yieldSize = YS)
   # Init file connection
@@ -142,6 +142,7 @@ remove_matches <- function(reads_bam, read_names, output, YS, threads,
     # Define BAM file with smaller yield size
     bf <- Rsamtools::BamFile(reads_bam, yieldSize = YS)
     # Initialize connection for output file
+    if(file.exists(name_out)) file.remove(name_out)
     con_gz <- gzfile(name_out, open = "a")
     YIELD <- function(X) {
       to_pull <- c("qname", "rname", "cigar", "qwidth", "pos")
@@ -160,9 +161,9 @@ remove_matches <- function(reads_bam, read_names, output, YS, threads,
     MAP <- function(value, filter_names) {
       value %>%
         dplyr::filter(!(.data$qname %in% filter_names)) %>%
-        as.character() %>%
-        writeLines(con = con_gz)
-      return("")
+        apply(1, function(row) paste(row, collapse = ",")) %>%
+        writeLines(con_gz)
+      return("DONE!")
     }
     DONE <- function(data) nrow(data) == 0
     reduceByYield_RM(bf, YIELD, MAP, DONE, filter_names, numread)

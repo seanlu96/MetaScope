@@ -237,6 +237,7 @@ locations <- function(which_taxid, which_genome,
                       accessions, taxids, reads, out_base, out_dir) {
   plots_save <- file.path(out_dir, paste(out_base, "cov_plots",
                                          sep = "_"))
+  if (!dir.exists(plots_save)) dir.create(plots_save)
   # map back to accessions
   choose_acc <- paste(accessions[which(as.numeric(taxids) %in% which_taxid)])
   # map back to BAM
@@ -379,7 +380,7 @@ metascope_id <- function(input_file, input_type = "csv.gz",
     stop("Please supply a data.frame for db_feature_table if 'db = other'")
   }
   if (input_type == "csv.gz") {
-    if (!quiet) message("Cannot generate fastas or updated_bam from csv.gz file")
+    if (!quiet) message("Note, cannot generate fastas or updated_bam from csv.gz file")
     out_fastas <- FALSE
     update_bam <- FALSE
   }
