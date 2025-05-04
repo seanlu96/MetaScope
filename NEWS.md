@@ -3,6 +3,7 @@
 ## Bug Fixes
 * Fixed filter compression to take a pre-formatted character string in csv format
 * Fixed minor issues in convert_animalcules() when unlinked TIDs are present
+* Updated convert_animalcules to correct a bug in the final consoolidation of reads, where more read counts were being added than in the original sample
 
 # MetaScope 1.7.4 (Bioc 3.21)
 
