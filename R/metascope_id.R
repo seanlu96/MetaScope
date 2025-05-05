@@ -518,7 +518,13 @@ metascope_id <- function(input_file, input_type = "csv.gz",
   if (update_bam) {
     # Convert accessions back into taxids. Some taxids may be from different accessions
     # This step may produce false alignments to accessions of the same taxid
-    accessions_taxids <- tidyr::tibble(rname_names = accessions, taxids, rname = match(taxids, unique(taxids)))
+    if (db == "ncbi") {
+      accessions_taxids <- taxonomy_indices |>
+        dplyr::rename(rname = taxa_index, 
+                      rname_names = accessions)
+    } else {
+      accessions_taxids <- tidyr::tibble(rname_names = accessions, taxids, rname = match(taxids, unique(taxids)))
+    }
     combined_distinct <- results[[2]]
     combined_distinct <- combined_distinct |>
       dplyr::right_join(accessions_taxids, combined_distinct, by = "rname", relationship = "many-to-many") |>
