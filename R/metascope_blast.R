@@ -692,7 +692,8 @@ metascope_blast <- function(metascope_id_path,
     current_accessions <- accessions_taxids |> 
       dplyr::filter(species == current_species) |>
       dplyr::pull(accessions)
-    seqs <- sample(all_fastas[names(all_fastas) %in% current_accessions], size = num_reads)
+    seqs <- all_fastas[names(all_fastas) %in% current_accessions]
+    seqs <- sample(seqs, size = min(length(seqs), num_reads))
     Biostrings::writeXStringSet(
       seqs, filepath = file.path(fastas_tmp_dir, paste0(sprintf("%05d", i), ".fa")))
   }
