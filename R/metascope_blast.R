@@ -626,7 +626,7 @@ metascope_blast <- function(metascope_id_path,
   # Parallelization settings
   if (!is.numeric(num_threads)) num_threads <- 1
   BPPARAM <- BiocParallel::MulticoreParam(workers = num_threads)
-
+  
   # Sort and index bam file
   sorted_bam_file_path <- file.path(tmp_dir, paste0(sample_name, "_sorted"))
   message("Sorting bam file to ", sorted_bam_file_path, ".bam")
@@ -635,10 +635,22 @@ metascope_blast <- function(metascope_id_path,
   sorted_bam_file <- paste0(sorted_bam_file_path, ".bam")
   Rsamtools::indexBam(sorted_bam_file)
   bam_file <- Rsamtools::BamFile(sorted_bam_file, index = sorted_bam_file)
-
+  
+  # Generate fasta file from sroted bam file
+  command_string <- paste0("samtools view ", file.path(tmp_dir, sample_name), 
+                           "_sorted.bam | awk \'{print \">\"$3 \"\\n\" $10}\' > ", 
+                           file.path(tmp_dir, sample_name), "_aligned.fasta")
+  system(command_string)
+  all_fastas <- Biostrings::readDNAStringSet(paste0(file.path(tmp_dir, sample_name), "_aligned.fasta"))
+  accessions_taxids <- tibble::tibble(accessions = unique(names(all_fastas))) |>
+    dplyr::mutate(TaxonomyID = taxonomizr::accessionToTaxa(accessions, accession_path), 
+                  species = taxonomizr::getTaxonomy(TaxonomyID, sqlFile = accession_path,
+                                                    desiredTaxa = "species")[,])
+  
+  
   # Load in metascope id file and clean unknown genomes
   metascope_id_in <- utils::read.csv(metascope_id_path, header = TRUE)
-
+  
   # Group metascope id by species and create metascope species id
   if (db == "silva") {
     metascope_id_tax <- add_in_taxa(metascope_id_in, caching = FALSE,           # TODO Add initialization steps to install required databases
@@ -646,7 +658,7 @@ metascope_blast <- function(metascope_id_path,
   } else if (db == "ncbi") {
     metascope_id_tax <- add_in_taxa_ncbi(metascope_id_in, accession = accession_path, BPPARAM = BPPARAM)
   }
-
+  
   metascope_id_species <- metascope_id_tax |> dplyr::mutate("id" = dplyr::row_number()) |>
     dplyr::group_by(!!dplyr::sym("superkingdom"), !!dplyr::sym("kingdom"), !!dplyr::sym("phylum"),
                     !!dplyr::sym("class"),
@@ -664,6 +676,7 @@ metascope_blast <- function(metascope_id_path,
   print_out_file <- file.path(out_dir, paste0(sample_name, ".metascope_species.csv"))
   utils::write.csv(metascope_id_species, file = print_out_file)
   message("Saving metascope grouped species to ", print_out_file)
+  
   # Create fasta directory in tmp directory to save fasta sequences
   fastas_tmp_dir <- file.path(tmp_dir, "fastas")
   if(!dir.exists(fastas_tmp_dir)) dir.create(fastas_tmp_dir,
@@ -672,50 +685,26 @@ metascope_blast <- function(metascope_id_path,
   message("Generating fasta sequences from bam file")
   # How many taxa
   num_taxa_loop <- min(nrow(metascope_id_species), num_results)
-  # Extract sequence information from BAM file
-  seq_info_df <- as.data.frame(Rsamtools::seqinfo(bam_file)) |>
-    tibble::rownames_to_column("seqnames") |>
-    dplyr::mutate("original_seqids" = !!dplyr::sym("seqnames"))
-  # Obtain NCBI uids from readnames (accessions)
-  if (db == "ncbi") {
-    all_ids <- identify_rnames(list(list(rname = seq_info_df$seqnames))) |>
-      taxonomizr::accessionToTaxa(accession_path) |>
-      lapply(function(x) x[[1]]) |> unlist()
-    seq_info_df$seqnames <- all_ids
-  }
-  if (db == "silva") {
-    seq_info_df <- seq_info_df |>
-      dplyr::mutate("seqnames" = sub(';.*$','', !!dplyr::sym("seqnames")))
-  }
-  # Iterate over
+  
+  # Write Fastas
   write_fastas <- function(i) {
-    taxids <- strsplit(metascope_id_species$TaxonomyIDs[i], split = ",")[[1]]
-    read_proportions <- strsplit(metascope_id_species$read_proportions[i],
-                                 split = ",")[[1]]
-    reads_to_sample <- round(as.numeric(read_proportions) * num_reads, digits = 0)
-    if (length(reads_to_sample) > num_reads) {
-      taxids <- taxids[seq_len(num_reads)]
-      reads_to_sample <- reads_to_sample[seq_len(num_reads)]
-    }
-    ids_n <- lapply(seq_along(taxids), function(i) c(taxids[i], reads_to_sample[i]))
-    # Parallelize for loop
-    seqs_list <- BiocParallel::bplapply(ids_n, get_multi_seqs, bam_file = bam_file,
-                                        seq_info_df = seq_info_df,
-                                        metascope_id_tax = metascope_id_tax,
-                                        sorted_bam_file = sorted_bam_file, BPPARAM = BPPARAM)
-    seqs <- do.call(c, seqs_list)
+    current_species <- metascope_id_species$species[i]
+    current_accessions <- accessions_taxids |> 
+      dplyr::filter(species == current_species) |>
+      dplyr::pull(accessions)
+    seqs <- sample(all_fastas[names(all_fastas) %in% current_accessions], size = num_reads)
     Biostrings::writeXStringSet(
-      seqs$seq, filepath = file.path(fastas_tmp_dir, paste0(sprintf("%05d", i), ".fa")))
+      seqs, filepath = file.path(fastas_tmp_dir, paste0(sprintf("%05d", i), ".fa")))
   }
-
+  
   # Parallelize the writing of fastas
   out <- BiocParallel::bplapply(seq_len(num_taxa_loop), write_fastas, BPPARAM = BPPARAM)
-
+  
   # Create blast directory in tmp directory to save blast results in
   blast_tmp_dir <- file.path(tmp_dir, "blast")
   if(!dir.exists(blast_tmp_dir)) dir.create(blast_tmp_dir, recursive = TRUE)
   unlink(paste0(blast_tmp_dir, "/*"), recursive = TRUE)
-
+  
   # Run rBlast on all metascope microbes
   message("Running BLASTN on all sequences")
   blastn_results(results_table = metascope_id_species, bam_file = bam_file,
@@ -725,21 +714,21 @@ metascope_blast <- function(metascope_id_path,
                  sample_name = sample_name, quiet = TRUE,
                  accession_path = accession_path, fasta_dir = fastas_tmp_dir,
                  BPPARAM = BPPARAM)
-
+  
   # Run Blast metrics
   message("Running BLAST metrics on all blast results")
   blast_result_metrics_df <- plyr::adply(
     list.files(blast_tmp_dir, full.names = TRUE), 1, blast_result_metrics,
     accession_path = accession_path, db = db)
   blast_result_metrics_df <- blast_result_metrics_df[ , -which(names(blast_result_metrics_df) %in% c("X1"))]
-
+  
   # Append Blast Metrics to MetaScope results
   if (nrow(metascope_id_species) > nrow(blast_result_metrics_df)) {
     ind <- seq(nrow(blast_result_metrics_df) + 1, nrow(metascope_id_species))
     blast_result_metrics_df[ind, ] <- NA
   }
   print_file <- file.path(out_dir, paste0(sample_name, ".metascope_blast.csv"))
-
+  
   metascope_blast_df <- data.frame(metascope_id_species, blast_result_metrics_df)
   utils::write.csv(metascope_blast_df, print_file, row.names = FALSE)
   message("Results written to ", print_file)
