@@ -17,7 +17,7 @@ metascope_id(
   maxitsEM = 25,
   update_bam = FALSE,
   num_species_plot = NULL,
-  blast_fastas = FALSE,
+  out_fastas = FALSE,
   num_genomes = 100,
   num_reads = 50,
   quiet = TRUE
@@ -57,24 +57,24 @@ Defaults to \code{dirname(input_file)}.}
 \item{maxitsEM}{The maximum number of EM iterations, regardless of whether
 the convEM is below the threshhold. Default set at \code{50}. If set at
 \code{0}, the algorithm skips the EM step and summarizes the .bam file 'as
-is'}
+is'.}
 
 \item{update_bam}{Whether to update BAM file with new read assignments.
-Default is \code{FALSE}. If \code{TRUE}, requires \code{input_type = TRUE}
+Default is \code{FALSE}. If \code{TRUE}, requires \code{input_type = "bam"}
 such that a BAM file is the input to the function.}
 
 \item{num_species_plot}{The number of genome coverage plots to be saved.
 Default is \code{NULL}, which saves coverage plots for the ten most highly
 abundant species.}
 
-\item{blast_fastas}{Logical, whether or not to output fasta files for MetaBlast.
+\item{out_fastas}{Logical, whether or not to output fasta files of reads.
 Default is \code{FALSE}.}
 
-\item{num_genomes}{Number of genomes to output fasta files for MetaBlast.
-Default is \code{100}.}
+\item{num_genomes}{Number of genomes to output fasta files for
+\code{out_fastas}. Default is \code{100}.}
 
-\item{num_reads}{Number of reads per genome per fasta file for MetaBlast.
-Default is \code{50}.}
+\item{num_reads}{Number of reads per genome per fasta file for 
+\code{out_fastas}. Default is \code{50}.}
 
 \item{quiet}{Turns off most messages. Default is \code{TRUE}.}
 }
@@ -82,7 +82,7 @@ Default is \code{50}.}
 This function returns a .csv file with annotated read counts to
   genomes with mapped reads. The function itself returns the output .csv file
   name. Depending on the parameters specified, can also output an updated
-  BAM file, and fasta files for usage downstream with MetaBLAST.
+  BAM file, and fasta files for additional analysis downstream.
 }
 \description{
 This function will read in a .bam or .csv.gz file, annotate the taxonomy and

@@ -1,12 +1,14 @@
-# Development version
+# MetaScope 1.9.0 (Bioc 3.22)
+
+## Bug Fixes
+* Fixed filter compression to take a pre-formatted character string in csv format
+* Fixed minor issues in convert_animalcules() when unlinked TIDs are present
+* Updated convert_animalcules to correct a bug in the final consoolidation of reads, where more read counts were being added than in the original sample
+
+# MetaScope 1.7.4 (Bioc 3.21)
 
 ## Major changes
-* Changed name of `demultiplex()` to `meta_demultiplex()`
-* All dependencies on taxize have now been removed as the package has been deprecated on CRAN for the foreseeable future. We have now shifted our dependency for NCBI lookups to the `taxonomizr` database. The vignette and example script on our website have been updated to reflect this.
-* Increased efficiency of MetaBlast module
-
-## Bug fixes
-* Changed dependency of data.table to properly compress files.
+* All MetaBLAST functionality and references removed.
 
 # MetaScope 1.3.7 (Bioc 3.19)
 
@@ -41,5 +43,3 @@
 
 ## Major Changes
 * Submitted to Bioconductor
-
-## Minor Changes

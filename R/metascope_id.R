@@ -7,8 +7,8 @@ get_max_index_matrix <- function(mat) {
   return(is_max)
 }
 
-obtain_reads <- function(input_file, input_type, aligner, blast_fastas = FALSE, quiet) {
-  if (blast_fastas) {
+obtain_reads <- function(input_file, input_type, aligner, out_fastas = FALSE, quiet) {
+  if (out_fastas) {
     to_pull <- c("qname", "rname", "cigar", "qwidth", "pos", "seq")
   } else {
     to_pull <- c("qname", "rname", "cigar", "qwidth", "pos")
@@ -109,7 +109,7 @@ get_assignments <- function(combined, convEM, maxitsEM, unique_taxids,
   pi_old <- rep(1 / nrow(gammas), ncol(gammas))
   pi_new <- theta_new <- Matrix::colMeans(gammas)
   if (!is.null(priors_df)) {
-    weights <- tidyr::as_tibble(unique_genome_names) |> 
+    weights <- tidyr::as_tibble(unique_genome_names) |>
       dplyr::left_join(priors_df, by = dplyr::join_by(value == species)) |>
       tidyr::replace_na(replace = list(prior_weights = 0))
     unique_reads <- weights$prior_weights * max(combined$qname)
@@ -135,7 +135,7 @@ get_assignments <- function(combined, convEM, maxitsEM, unique_taxids,
     gammas_new <- weighted_gamma / weighted_gamma_sums
     # Maximization step: proportion of reads to each genome
     pi_new <- (Matrix::colSums(gammas_new) + unique_reads) / (sum(Matrix::colSums(gammas_new)) + sum(unique_reads))
-    theta_new_num <- (Matrix::colSums(y_ind_2 * gammas_new) + 1) 
+    theta_new_num <- (Matrix::colSums(y_ind_2 * gammas_new) + 1)
     theta_new <- theta_new_num / (nrow(gammas_new) + 1)
     # Check convergence
     it <- it + 1
@@ -171,7 +171,7 @@ get_assignments <- function(combined, convEM, maxitsEM, unique_taxids,
                                   hits_ind = hits_ind) %>%
     dplyr::arrange(dplyr::desc(.data$read_count))
   if (!quiet) message("Found reads for ", nrow(results_tibble), " genomes")
-  
+
   return(list(results_tibble, combined_distinct, combined_single))
 }
 
@@ -251,6 +251,7 @@ locations <- function(which_taxid, which_genome,
                       accessions, taxids, reads, out_base, out_dir) {
   plots_save <- file.path(out_dir, paste(out_base, "cov_plots",
                                          sep = "_"))
+  if (!dir.exists(plots_save)) dir.create(plots_save)
   # map back to accessions
   choose_acc <- paste(accessions[which(as.numeric(taxids) %in% which_taxid)])
   # map back to BAM
@@ -306,18 +307,18 @@ locations <- function(which_taxid, which_genome,
 #' @param maxitsEM The maximum number of EM iterations, regardless of whether
 #'   the convEM is below the threshhold. Default set at \code{50}. If set at
 #'   \code{0}, the algorithm skips the EM step and summarizes the .bam file 'as
-#'   is'
-#' @param blast_fastas Logical, whether or not to output fasta files for MetaBlast.
+#'   is'.
+#' @param out_fastas Logical, whether or not to output fasta files of reads.
 #' Default is \code{FALSE}.
-#' @param num_genomes Number of genomes to output fasta files for MetaBlast.
-#' Default is \code{100}.
-#' @param num_reads Number of reads per genome per fasta file for MetaBlast.
-#' Default is \code{50}.
+#' @param num_genomes Number of genomes to output fasta files for
+#' \code{out_fastas}. Default is \code{100}.
+#' @param num_reads Number of reads per genome per fasta file for
+#' \code{out_fastas}. Default is \code{50}.
 #' @param num_species_plot The number of genome coverage plots to be saved.
 #'   Default is \code{NULL}, which saves coverage plots for the ten most highly
 #'   abundant species.
 #' @param update_bam Whether to update BAM file with new read assignments.
-#' Default is \code{FALSE}. If \code{TRUE}, requires \code{input_type = TRUE}
+#' Default is \code{FALSE}. If \code{TRUE}, requires \code{input_type = "bam"}
 #' such that a BAM file is the input to the function.
 #' @param quiet Turns off most messages. Default is \code{TRUE}.
 #' @param tmp_dir Path to a directory to which bam and updated bam files can be saved.
@@ -326,7 +327,7 @@ locations <- function(which_taxid, which_genome,
 #' @return This function returns a .csv file with annotated read counts to
 #'   genomes with mapped reads. The function itself returns the output .csv file
 #'   name. Depending on the parameters specified, can also output an updated
-#'   BAM file, and fasta files for usage downstream with MetaBLAST.
+#'   BAM file, and fasta files for additional analysis downstream.
 #'
 #' @export
 #'
@@ -374,16 +375,17 @@ metascope_id <- function(input_file, input_type = "csv.gz",
                          db = "ncbi",
                          db_feature_table = NULL,
                          accession_path = NULL,
-                         priors_df = NULL, 
+                         priors_df = NULL,
                          tmp_dir = dirname(input_file),
                          out_dir = dirname(input_file),
                          convEM = 1 / 10000, maxitsEM = 25,
                          update_bam = FALSE,
                          num_species_plot = NULL,
                          blast_fastas = FALSE, num_genomes = 100,
-                         num_reads = 50, 
+                         num_reads = 50,
                          group_by_taxa = "species",
                          quiet = TRUE)  {
+
   out_base <- input_file %>% base::basename() %>% strsplit(split = "\\.") %>%
     magrittr::extract2(1) %>% magrittr::extract(1)
   out_file <- file.path(out_dir, paste0(out_base, ".metascope_id.csv"))
@@ -396,20 +398,20 @@ metascope_id <- function(input_file, input_type = "csv.gz",
     stop("Please supply a data.frame for db_feature_table if 'db = other'")
   }
   if (input_type == "csv.gz") {
-    if (!quiet) message("Cannot generate blast fastas or updated_bam from csv.gz file")
-    blast_fastas <- FALSE
+    if (!quiet) message("Note, cannot generate fastas or updated_bam from csv.gz file")
+    out_fastas <- FALSE
     update_bam <- FALSE
   }
   # Check that tmp_dir is specified
   if (is.null(tmp_dir)) stop("Please supply a directory for 'tmp_dir' argument.")
-  reads <- obtain_reads(input_file, input_type, aligner, blast_fastas, quiet)
+  reads <- obtain_reads(input_file, input_type, aligner, out_fastas, quiet)
   unmapped <- is.na(reads[[1]]$rname)
   if (db == "ncbi") reads[[1]]$rname <- identify_rnames(reads)
   mapped_rname <- as.character(reads[[1]]$rname[!unmapped])
   mapped_qname <- reads[[1]]$qname[!unmapped]
   mapped_cigar <- reads[[1]]$cigar[!unmapped]
   mapped_qwidth <- reads[[1]]$qwidth[!unmapped]
-  if (blast_fastas) mapped_seqs <- reads[[1]]$seq[!unmapped]
+  if (out_fastas) mapped_seqs <- reads[[1]]$seq[!unmapped]
   if (aligner == "bowtie2") {
     # mapped alignments used
     map_edit_or_align <- reads[[1]][["tag"]][["AS"]][!unmapped]
@@ -419,7 +421,7 @@ metascope_id <- function(input_file, input_type = "csv.gz",
   }
   read_names <- unique(mapped_qname)
   accessions <- as.character(unique(mapped_rname))
-  
+
   # Let user decide which taxa level to group by
   if (is.null(group_by_taxa)) {
     group_by_taxa <- "species"
@@ -432,8 +434,8 @@ metascope_id <- function(input_file, input_type = "csv.gz",
                                                          desiredTaxa = group_by_taxa)[,]) |>
       dplyr::mutate(taxa_names = ifelse(is.na(taxa_names), paste0("unknown genome; accession ID is", accessions), taxa_names)) |>
       dplyr::mutate(taxa_index = match(taxa_names, unique(taxa_names)))
-    
-  } else if (db == "silva") { 
+
+  } else if (db == "silva") {
     tax_id_all <- stringr::str_split(accessions, ";", n =2)
     taxids <- sapply(tax_id_all, `[[`, 1)
     genome_names <- sapply(tax_id_all, `[[`, 2)
@@ -449,8 +451,8 @@ metascope_id <- function(input_file, input_type = "csv.gz",
     genome_names <- tax_id_all %>% dplyr::select(2) %>% unlist() %>%
       unname()
   }
-  
-  
+
+
   # Make an aligment matrix (rows: reads, cols: unique taxids)
   if (!quiet) message("Setting up the EM algorithm")
   qname_inds <- match(mapped_qname, read_names)
@@ -463,7 +465,7 @@ metascope_id <- function(input_file, input_type = "csv.gz",
       dplyr::group_by(taxa_index) |>
       dplyr::slice(which.min(ifelse(is.na(taxid_rank), Inf, taxid_rank))) |>
       dplyr::ungroup()
-    
+
     unique_taxids <- unique_tax_data$taxids
     unique_genome_names <- unique_tax_data$taxa_names
   }
@@ -474,7 +476,7 @@ metascope_id <- function(input_file, input_type = "csv.gz",
   rname_tax_inds <- rname_tax_inds[order(qname_inds)]
   cigar_strings <- mapped_cigar[order(qname_inds)]
   qwidths <- mapped_qwidth[order(qname_inds)]
-  if (blast_fastas) mapped_seqs <- mapped_seqs[order(qname_inds)]
+  if (out_fastas) mapped_seqs <- mapped_seqs[order(qname_inds)]
 
   if (aligner == "bowtie2") {
     # mapped alignments used
@@ -497,7 +499,7 @@ metascope_id <- function(input_file, input_type = "csv.gz",
   utils::write.csv(metascope_id_file, file = out_file, row.names = FALSE)
   if (!quiet) message("Results written to ", out_file)
 
-  if (blast_fastas){
+  if (out_fastas){
     combined_single <- results[[3]]
     num_genomes <- min(num_genomes, nrow(results[[1]]))
     new_file <- file.path(tmp_dir, "fastas")
@@ -520,7 +522,7 @@ metascope_id <- function(input_file, input_type = "csv.gz",
     # This step may produce false alignments to accessions of the same taxid
     if (db == "ncbi") {
       accessions_taxids <- taxonomy_indices |>
-        dplyr::rename(rname = taxa_index, 
+        dplyr::rename(rname = taxa_index,
                       rname_names = accessions)
     } else {
       accessions_taxids <- tidyr::tibble(rname_names = accessions, taxids, rname = match(taxids, unique(taxids)))

@@ -47,9 +47,11 @@ mk_interim_fastq <- function(reads_bam, read_loc, YS, quiet) {
     Rsamtools::scanBam(bf_init, param = Rsamtools::ScanBamParam(
       what = "qname"))[[1]]$qname %>% unique()
   init_df <- dplyr::tibble("Header" = unname(unlist(allqname))) %>%
-    dplyr::distinct(.data$Header, .keep_all = TRUE)
+    dplyr::distinct("Header", .keep_all = TRUE)
   # Define BAM file with smaller yield size
   bf <- Rsamtools::BamFile(reads_bam, yieldSize = YS)
+  # Init file connection
+  gz_con <- gzfile(read_loc, "a")
   # Define functions
   YIELD <- function(bf) {
     to_pull <- c("qname", "qual", "seq")
@@ -70,17 +72,16 @@ mk_interim_fastq <- function(reads_bam, read_loc, YS, quiet) {
     all_join %>% dplyr::filter(!is.na(.data$Sequence)) %>%
       dplyr::mutate("Plus" = "+",
                     "Header" = stringr::str_c("@", .data$Header)) %>%
-      dplyr::select(.data$Header, .data$Sequence, .data$Plus,
-                    .data$Quality) %>% as.matrix() %>% t() %>%
-      as.character() %>% dplyr::as_tibble() %>%
-      data.table::fwrite(
-        file = read_loc, compress = "gzip", col.names = FALSE,
-        quote = FALSE, append = TRUE)
+      dplyr::select("Header", "Sequence", "Plus", "Quality") %>% 
+      as.matrix() %>% t() %>%
+      as.character() %>%
+      writeLines(con = gz_con)
     empty_vals <- all_join %>% dplyr::filter(is.na(.data$Sequence)) %>%
       dplyr::select(.data$Header)
     return(empty_vals)
   }
   reduceByYield_iterate(bf, YIELD, MAP, REDUCE, init = init_df)
+  close(gz_con)
   if (!quiet) message("Intermediate FASTQ file written to", read_loc)
 }
 
@@ -119,6 +120,7 @@ remove_matches <- function(reads_bam, read_names, output, YS, threads,
   filter_names <- sort(unique(unlist(read_names)))
   if (make_bam) {
     name_out <- paste0(output, ".bam")
+    if (file.exists(name_out)) file.remove(name_out)
     # obtain vector of target query names from .bam file
     target_reads <- Rsamtools::scanBam(reads_bam)[[1]]$qname
     # define logical vector of which reads to keep, based on query names
@@ -139,6 +141,9 @@ remove_matches <- function(reads_bam, read_names, output, YS, threads,
         what = "pos")) %>% magrittr::extract2(1) %>% unlist() %>% length()
     # Define BAM file with smaller yield size
     bf <- Rsamtools::BamFile(reads_bam, yieldSize = YS)
+    # Initialize connection for output file
+    if(file.exists(name_out)) file.remove(name_out)
+    con_gz <- gzfile(name_out, open = "a")
     YIELD <- function(X) {
       to_pull <- c("qname", "rname", "cigar", "qwidth", "pos")
       if (identical(aligner, "bowtie2")) {
@@ -156,13 +161,13 @@ remove_matches <- function(reads_bam, read_names, output, YS, threads,
     MAP <- function(value, filter_names) {
       value %>%
         dplyr::filter(!(.data$qname %in% filter_names)) %>%
-        data.table::fwrite(file = name_out, compress = "gzip",
-                           col.names = FALSE, quote = TRUE, append = TRUE,
-                           nThread = threads)
-      return("")
+        apply(1, function(row) paste(row, collapse = ",")) %>%
+        writeLines(con_gz)
+      return("DONE!")
     }
     DONE <- function(data) nrow(data) == 0
     reduceByYield_RM(bf, YIELD, MAP, DONE, filter_names, numread)
+    close(con_gz)
   }
   if (!quiet) message("DONE! Alignments written to ", name_out)
   return(name_out)
