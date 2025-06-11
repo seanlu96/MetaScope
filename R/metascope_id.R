@@ -75,13 +75,13 @@ get_alignscore <- function(aligner, cigar_strings, count_matches, scores,
     num_match <- unlist(vapply(cigar_strings, count_matches,
                                USE.NAMES = FALSE, double(1)))
     alignment_scores <- num_match - scores
-    scaling_factor <- 100.0 / max(alignment_scores)
+    scaling_factor <- 1.0 / max(alignment_scores)
     relative_alignment_scores <- alignment_scores - min(alignment_scores)
     exp_alignment_scores <- exp(relative_alignment_scores * scaling_factor)
   } else if (identical(aligner, "bowtie2")) {
     # Bowtie2 alignment scores: AS value + read length (qwidths)
     alignment_scores <- scores + qwidths
-    scaling_factor <- 100.0 / max(alignment_scores)
+    scaling_factor <- 1.0 / max(alignment_scores)
     relative_alignment_scores <- alignment_scores - min(alignment_scores)
     exp_alignment_scores <- exp(relative_alignment_scores * scaling_factor)
   } else if (identical(aligner, "other")) {
@@ -91,8 +91,9 @@ get_alignscore <- function(aligner, cigar_strings, count_matches, scores,
   return(exp_alignment_scores)
 }
 
+
 get_assignments <- function(combined, convEM, maxitsEM, unique_taxids,
-                            unique_genome_names, update_bam = TRUE, input_file, quiet) {
+                            unique_genome_names, update_bam = TRUE, input_file, priors_df, quiet) {
   combined$index <- seq.int(1, nrow(combined))
   input_distinct <- dplyr::distinct(combined, .data$qname, .data$rname,
                                     .keep_all = TRUE)
@@ -107,7 +108,20 @@ get_assignments <- function(combined, convEM, maxitsEM, unique_taxids,
   gammas <- Matrix::sparseMatrix(qname_inds_2, rname_tax_inds_2, x = scores_2)
   pi_old <- rep(1 / nrow(gammas), ncol(gammas))
   pi_new <- theta_new <- Matrix::colMeans(gammas)
-  conv <- max(abs(pi_new - pi_old) / pi_old)
+  if (!is.null(priors_df)) {
+    weights <- tidyr::as_tibble(unique_genome_names) |>
+      dplyr::left_join(priors_df, by = dplyr::join_by(value == species)) |>
+      tidyr::replace_na(replace = list(prior_weights = 0))
+    unique_reads <- weights$prior_weights * max(combined$qname)
+    exp_weights <- exp(weights$prior_weights)
+    #weighted_pi_new <- pi_new + weights / (1 + weights)
+    posterior <- pi_new * exp_weights
+    pi_new <- posterior
+  } else {
+    unique_reads = 0
+  }
+  epsilon = 1e-8
+  conv <- max(abs(pi_new - pi_old) / (pi_old + epsilon))
   it <- 0
   if (!quiet) message("Starting EM iterations")
   while (conv > convEM && it < maxitsEM) {
@@ -120,12 +134,12 @@ get_assignments <- function(combined, convEM, maxitsEM, unique_taxids,
     weighted_gamma_sums <- Matrix::rowSums(weighted_gamma)
     gammas_new <- weighted_gamma / weighted_gamma_sums
     # Maximization step: proportion of reads to each genome
-    pi_new <- Matrix::colMeans(gammas_new)
+    pi_new <- (Matrix::colSums(gammas_new) + unique_reads) / (sum(Matrix::colSums(gammas_new)) + sum(unique_reads))
     theta_new_num <- (Matrix::colSums(y_ind_2 * gammas_new) + 1)
     theta_new <- theta_new_num / (nrow(gammas_new) + 1)
     # Check convergence
     it <- it + 1
-    conv <- max(abs(pi_new - pi_old) / pi_old, na.rm = TRUE)
+    conv <- max(abs(pi_new - pi_old) / (pi_old + epsilon), na.rm = TRUE)
     pi_old <- pi_new
     if (!quiet) message(c(it, " ", conv))
   }
@@ -298,7 +312,7 @@ locations <- function(which_taxid, which_genome,
 #' Default is \code{FALSE}.
 #' @param num_genomes Number of genomes to output fasta files for
 #' \code{out_fastas}. Default is \code{100}.
-#' @param num_reads Number of reads per genome per fasta file for 
+#' @param num_reads Number of reads per genome per fasta file for
 #' \code{out_fastas}. Default is \code{50}.
 #' @param num_species_plot The number of genome coverage plots to be saved.
 #'   Default is \code{NULL}, which saves coverage plots for the ten most highly
@@ -361,13 +375,17 @@ metascope_id <- function(input_file, input_type = "csv.gz",
                          db = "ncbi",
                          db_feature_table = NULL,
                          accession_path = NULL,
+                         priors_df = NULL,
                          tmp_dir = dirname(input_file),
                          out_dir = dirname(input_file),
                          convEM = 1 / 10000, maxitsEM = 25,
                          update_bam = FALSE,
                          num_species_plot = NULL,
-                         out_fastas = FALSE, num_genomes = 100,
-                         num_reads = 50, quiet = TRUE)  {
+                         blast_fastas = FALSE, num_genomes = 100,
+                         num_reads = 50,
+                         group_by_taxa = "species",
+                         quiet = TRUE)  {
+
   out_base <- input_file %>% base::basename() %>% strsplit(split = "\\.") %>%
     magrittr::extract2(1) %>% magrittr::extract(1)
   out_file <- file.path(out_dir, paste0(out_base, ".metascope_id.csv"))
@@ -403,18 +421,20 @@ metascope_id <- function(input_file, input_type = "csv.gz",
   }
   read_names <- unique(mapped_qname)
   accessions <- as.character(unique(mapped_rname))
+
+  # Let user decide which taxa level to group by
+  if (is.null(group_by_taxa)) {
+    group_by_taxa <- "species"
+  }
   if (db == "ncbi") {
     if (is.null(accession_path)) stop("Please provide a valid accession_path argument")
-    taxids <- taxonomizr::accessionToTaxa(accessions, sqlFile = accession_path)
-    genome_names <- apply(taxonomizr::getTaxonomy(taxids, sqlFile = accession_path,
-                                                  desiredTaxa = c("superkingdom", "phylum", "class",
-                                                                  "order", "family", "genus", "species", "strain")),
-                          1,function(x) paste0(x, collapse = ";"))
-    # Accession ids for any unknown genomes (likely removed from db)
-    unk_inds <- which(is.na(taxids))
-    genome_names[unk_inds] <- paste("unknown genome; accession ID is",
-                                    accessions[unk_inds])
-    taxids[unk_inds] <- accessions[unk_inds]
+    taxonomy_indices <- tidyr::tibble(accessions) |>
+      dplyr::mutate(taxids = taxonomizr::accessionToTaxa(accessions, sqlFile = accession_path)) |>
+      dplyr::mutate(taxa_names = taxonomizr::getTaxonomy(taxids, sqlFile = accession_path,
+                                                         desiredTaxa = group_by_taxa)[,]) |>
+      dplyr::mutate(taxa_names = ifelse(is.na(taxa_names), paste0("unknown genome; accession ID is", accessions), taxa_names)) |>
+      dplyr::mutate(taxa_index = match(taxa_names, unique(taxa_names)))
+
   } else if (db == "silva") {
     tax_id_all <- stringr::str_split(accessions, ";", n =2)
     taxids <- sapply(tax_id_all, `[[`, 1)
@@ -423,6 +443,7 @@ metascope_id <- function(input_file, input_type = "csv.gz",
     mapped_rname <- stringr::str_split(mapped_rname, ";", n = 2) %>%
       sapply(`[[`, 1)
     accessions <- as.character(unique(mapped_rname))
+    #TODO: GROUP BY SPECIES
   } else if (db == "other") {
     tax_id_all <- dplyr::tibble(`Feature ID` = accessions) %>%
       dplyr::left_join(db_feature_table, by = "Feature ID")
@@ -430,16 +451,27 @@ metascope_id <- function(input_file, input_type = "csv.gz",
     genome_names <- tax_id_all %>% dplyr::select(2) %>% unlist() %>%
       unname()
   }
-  unique_taxids <- unique(taxids)
-  taxid_inds <- match(taxids, unique_taxids)
-  unique_genome_names <- genome_names[!duplicated(taxid_inds)]
-  if (!quiet) message("\tFound ", length(unique_taxids),
-                      " unique taxa")
+
+
   # Make an aligment matrix (rows: reads, cols: unique taxids)
   if (!quiet) message("Setting up the EM algorithm")
   qname_inds <- match(mapped_qname, read_names)
-  rname_inds <- match(mapped_rname, accessions)
-  rname_tax_inds <- taxid_inds[rname_inds] #accession to taxid
+  if (db == "ncbi") {
+    rname_tax_inds <- taxonomy_indices$taxa_index[match(mapped_rname, taxonomy_indices$accessions)]
+    if (!quiet) message("\tFound ", length(taxonomy_indices$taxa_index),
+                        " unique taxa")
+    unique_tax_data <- taxonomy_indices |>
+      dplyr::mutate(taxid_rank = suppressWarnings(as.numeric(taxids))) |>
+      dplyr::group_by(taxa_index) |>
+      dplyr::slice(which.min(ifelse(is.na(taxid_rank), Inf, taxid_rank))) |>
+      dplyr::ungroup()
+
+    unique_taxids <- unique_tax_data$taxids
+    unique_genome_names <- unique_tax_data$taxa_names
+  }
+  else {
+    # Do something here in case the db isn't ncbi
+  }
   # Order based on read names
   rname_tax_inds <- rname_tax_inds[order(qname_inds)]
   cigar_strings <- mapped_cigar[order(qname_inds)]
@@ -460,7 +492,7 @@ metascope_id <- function(input_file, input_type = "csv.gz",
                                "rname" = rname_tax_inds,
                                "scores" = exp_alignment_scores)
   results <- get_assignments(combined, convEM, maxitsEM, unique_taxids,
-                             unique_genome_names, quiet = quiet)
+                             unique_genome_names, quiet = quiet, priors_df = priors_df)
   metascope_id_file <- results[[1]] %>% dplyr::select("TaxonomyID", "Genome",
                                                       "read_count", "Proportion",
                                                       "readsEM", "EMProportion")
@@ -488,7 +520,13 @@ metascope_id <- function(input_file, input_type = "csv.gz",
   if (update_bam) {
     # Convert accessions back into taxids. Some taxids may be from different accessions
     # This step may produce false alignments to accessions of the same taxid
-    accessions_taxids <- tidyr::tibble(rname_names = accessions, taxids, rname = match(taxids, unique(taxids)))
+    if (db == "ncbi") {
+      accessions_taxids <- taxonomy_indices |>
+        dplyr::rename(rname = taxa_index,
+                      rname_names = accessions)
+    } else {
+      accessions_taxids <- tidyr::tibble(rname_names = accessions, taxids, rname = match(taxids, unique(taxids)))
+    }
     combined_distinct <- results[[2]]
     combined_distinct <- combined_distinct |>
       dplyr::right_join(accessions_taxids, combined_distinct, by = "rname", relationship = "many-to-many") |>
