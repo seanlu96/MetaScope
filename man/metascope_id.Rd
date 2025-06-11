@@ -11,15 +11,17 @@ metascope_id(
   db = "ncbi",
   db_feature_table = NULL,
   accession_path = NULL,
+  priors_df = NULL,
   tmp_dir = dirname(input_file),
   out_dir = dirname(input_file),
   convEM = 1/10000,
   maxitsEM = 25,
   update_bam = FALSE,
   num_species_plot = NULL,
-  out_fastas = FALSE,
+  blast_fastas = FALSE,
   num_genomes = 100,
   num_reads = 50,
+  group_by_taxa = "species",
   quiet = TRUE
 )
 }
@@ -67,13 +69,13 @@ such that a BAM file is the input to the function.}
 Default is \code{NULL}, which saves coverage plots for the ten most highly
 abundant species.}
 
-\item{out_fastas}{Logical, whether or not to output fasta files of reads.
+\item{blast_fastas}{Logical, whether or not to output fasta files of reads.
 Default is \code{FALSE}.}
 
 \item{num_genomes}{Number of genomes to output fasta files for
 \code{out_fastas}. Default is \code{100}.}
 
-\item{num_reads}{Number of reads per genome per fasta file for 
+\item{num_reads}{Number of reads per genome per fasta file for
 \code{out_fastas}. Default is \code{50}.}
 
 \item{quiet}{Turns off most messages. Default is \code{TRUE}.}

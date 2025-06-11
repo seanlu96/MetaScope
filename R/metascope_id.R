@@ -110,7 +110,8 @@ get_assignments <- function(combined, convEM, maxitsEM, unique_taxids,
   pi_new <- theta_new <- Matrix::colMeans(gammas)
   if (!is.null(priors_df)) {
     weights <- tidyr::as_tibble(unique_genome_names) |>
-      dplyr::left_join(priors_df, by = dplyr::join_by(value == species)) |>
+      dplyr::rename("species" = "value") |>
+      dplyr::left_join(priors_df, by = "species") |>
       tidyr::replace_na(replace = list(prior_weights = 0))
     unique_reads <- weights$prior_weights * max(combined$qname)
     exp_weights <- exp(weights$prior_weights)
@@ -308,7 +309,7 @@ locations <- function(which_taxid, which_genome,
 #'   the convEM is below the threshhold. Default set at \code{50}. If set at
 #'   \code{0}, the algorithm skips the EM step and summarizes the .bam file 'as
 #'   is'.
-#' @param out_fastas Logical, whether or not to output fasta files of reads.
+#' @param blast_fastas Logical, whether or not to output fasta files of reads.
 #' Default is \code{FALSE}.
 #' @param num_genomes Number of genomes to output fasta files for
 #' \code{out_fastas}. Default is \code{100}.
@@ -429,11 +430,11 @@ metascope_id <- function(input_file, input_type = "csv.gz",
   if (db == "ncbi") {
     if (is.null(accession_path)) stop("Please provide a valid accession_path argument")
     taxonomy_indices <- tidyr::tibble(accessions) |>
-      dplyr::mutate(taxids = taxonomizr::accessionToTaxa(accessions, sqlFile = accession_path)) |>
-      dplyr::mutate(taxa_names = taxonomizr::getTaxonomy(taxids, sqlFile = accession_path,
+      dplyr::mutate("taxids" = taxonomizr::accessionToTaxa(accessions, sqlFile = accession_path)) |>
+      dplyr::mutate("taxa_names" = taxonomizr::getTaxonomy(taxids, sqlFile = accession_path,
                                                          desiredTaxa = group_by_taxa)[,]) |>
-      dplyr::mutate(taxa_names = ifelse(is.na(taxa_names), paste0("unknown genome; accession ID is", accessions), taxa_names)) |>
-      dplyr::mutate(taxa_index = match(taxa_names, unique(taxa_names)))
+      dplyr::mutate("taxa_names" = ifelse(is.na(!!dplyr::sym("taxa_names")), paste0("unknown genome; accession ID is", accessions), !!dplyr::sym("taxa_names"))) |>
+      dplyr::mutate("taxa_index" = match(!!dplyr::sym("taxa_names"), unique(!!dplyr::sym("taxa_names"))))
 
   } else if (db == "silva") {
     tax_id_all <- stringr::str_split(accessions, ";", n =2)
@@ -461,9 +462,10 @@ metascope_id <- function(input_file, input_type = "csv.gz",
     if (!quiet) message("\tFound ", length(taxonomy_indices$taxa_index),
                         " unique taxa")
     unique_tax_data <- taxonomy_indices |>
-      dplyr::mutate(taxid_rank = suppressWarnings(as.numeric(taxids))) |>
-      dplyr::group_by(taxa_index) |>
-      dplyr::slice(which.min(ifelse(is.na(taxid_rank), Inf, taxid_rank))) |>
+      dplyr::mutate("taxid_rank" = suppressWarnings(as.numeric(taxids))) |>
+      dplyr::group_by(!!dplyr::sym("taxa_index")) |>
+      dplyr::slice(which.min(ifelse(is.na(!!dplyr::sym("taxid_rank")),
+                                    Inf, !!dplyr::sym("taxid_rank")))) |>
       dplyr::ungroup()
 
     unique_taxids <- unique_tax_data$taxids
@@ -522,7 +524,7 @@ metascope_id <- function(input_file, input_type = "csv.gz",
     # This step may produce false alignments to accessions of the same taxid
     if (db == "ncbi") {
       accessions_taxids <- taxonomy_indices |>
-        dplyr::rename(rname = taxa_index,
+        dplyr::rename(rname = "taxa_index",
                       rname_names = accessions)
     } else {
       accessions_taxids <- tidyr::tibble(rname_names = accessions, taxids, rname = match(taxids, unique(taxids)))

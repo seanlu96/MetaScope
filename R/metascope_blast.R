@@ -67,7 +67,7 @@ add_in_taxa_ncbi <- function(metascope_id_in, accession, BPPARAM) {
                                            BPPARAM = BPPARAM) |>
     dplyr::bind_rows() |> as.data.frame() |>
     magrittr::set_colnames(taxon_ranks) |>
-    dplyr::mutate(TaxonomyID = metascope_id_in$TaxonomyID) |>
+    dplyr::mutate("TaxonomyID" = metascope_id_in$TaxonomyID) |>
     dplyr::relocate("TaxonomyID") |>
     dplyr::distinct(!!dplyr::sym("TaxonomyID"), .keep_all = TRUE) |>
     dplyr::left_join(metascope_id_in, by = c("TaxonomyID")) |>
@@ -642,9 +642,9 @@ metascope_blast <- function(metascope_id_path,
                            file.path(tmp_dir, sample_name), "_aligned.fasta")
   system(command_string)
   all_fastas <- Biostrings::readDNAStringSet(paste0(file.path(tmp_dir, sample_name), "_aligned.fasta"))
-  accessions_taxids <- tibble::tibble(accessions = unique(names(all_fastas))) |>
-    dplyr::mutate(TaxonomyID = taxonomizr::accessionToTaxa(accessions, accession_path), 
-                  species = taxonomizr::getTaxonomy(TaxonomyID, sqlFile = accession_path,
+  accessions_taxids <- tibble::tibble("accessions" = unique(names(all_fastas))) |>
+    dplyr::mutate("TaxonomyID" = taxonomizr::accessionToTaxa(!!dplyr::sym("accessions"), accession_path), 
+                  "species" = taxonomizr::getTaxonomy(!!dplyr::sym("TaxonomyID"), sqlFile = accession_path,
                                                     desiredTaxa = "species")[,])
   
   
@@ -690,8 +690,8 @@ metascope_blast <- function(metascope_id_path,
   write_fastas <- function(i) {
     current_species <- metascope_id_species$species[i]
     current_accessions <- accessions_taxids |> 
-      dplyr::filter(species == current_species) |>
-      dplyr::pull(accessions)
+      dplyr::filter(!!dplyr::sym("species") == current_species) |>
+      dplyr::pull("accessions")
     seqs <- all_fastas[names(all_fastas) %in% current_accessions]
     seqs <- sample(seqs, size = min(length(seqs), num_reads))
     Biostrings::writeXStringSet(
@@ -799,7 +799,7 @@ blast_reassignment <- function(metascope_blast_path, species_threshold, num_hits
         {
           blast_summary <- data.table::fread(blast_files[i]) |>
             tibble::as_tibble() |>
-            dplyr::mutate(species = paste0(!!dplyr::sym("genus"), " ", !!dplyr::sym("species"))) |>
+            dplyr::mutate("species" = paste0(!!dplyr::sym("genus"), " ", !!dplyr::sym("species"))) |>
             dplyr::group_by(!!dplyr::sym("qseqid")) |>
             # Select lowest evalues
             dplyr::slice_min(!!dplyr::sym("evalue"), with_ties = TRUE) |>
@@ -836,9 +836,9 @@ blast_reassignment <- function(metascope_blast_path, species_threshold, num_hits
           message(cond)
           # Choose a return value in case of error
           blast_summary <- dplyr::tibble(
-            genus = numeric(),
-            species = numeric(),
-            num_reads = numeric()
+            "genus" = numeric(),
+            "species" = numeric(),
+            "num_reads" = numeric()
           )
           blast_summary
         }

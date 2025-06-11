@@ -49,7 +49,7 @@ getExtension <- function(file){
 #'
 
 download_accessions <- function(ind_dir,
-                                tmp_dir = file_path(ind_dir, "tmp"),
+                                tmp_dir = file.path(ind_dir, "tmp"),
                                 remove_tmp_dir = TRUE,
                                 NCBI_accessions_database = TRUE,
                                 NCBI_accessions_name = "accessionTaxa",
