@@ -324,10 +324,10 @@ locations <- function(which_taxid, which_genome,
 #' @param quiet Turns off most messages. Default is \code{TRUE}.
 #' @param tmp_dir Path to a directory to which bam and updated bam files can be saved.
 #' Required.
-#' @param priors_df Dataframe containing priors data with columns containing 
+#' @param priors_df data.frame containing priors data with columns containing 
 #'  species name and prior weights in percentage.
-#' @param group_by_taxa Character. Taxanomy level to group accessions to. Defaults
-#'  to \code("species")
+#' @param group_by_taxa Character. Taxonomy level at which accessions should be grouped. Defaults
+#'  to \code{"species"}
 #'
 #' @return This function returns a .csv file with annotated read counts to
 #'   genomes with mapped reads. The function itself returns the output .csv file

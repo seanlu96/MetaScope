@@ -47,7 +47,7 @@ and a second \code{character} column supplying the taxon identifying information
 \item{accession_path}{(character) Filepath to NCBI accessions SQL database. See
 \code{taxonomzr::prepareDatabase()}.}
 
-\item{priors_df}{Dataframe containing priors data with columns containing 
+\item{priors_df}{data.frame containing priors data with columns containing 
 species name and prior weights in percentage.}
 
 \item{tmp_dir}{Path to a directory to which bam and updated bam files can be saved.
@@ -81,8 +81,8 @@ Default is \code{FALSE}.}
 \item{num_reads}{Number of reads per genome per fasta file for
 \code{out_fastas}. Default is \code{50}.}
 
-\item{group_by_taxa}{Character. Taxanomy level to group accessions to. Defaults
-to \code("species")}
+\item{group_by_taxa}{Character. Taxonomy level at which accessions should be grouped. Defaults
+to \code{"species"}}
 
 \item{quiet}{Turns off most messages. Default is \code{TRUE}.}
 }
