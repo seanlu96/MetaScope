@@ -40,6 +40,14 @@ Defaults to \code{TRUE}.}
 extension) to save SILVA taxonomy database.
 Defaults to the file supplied with the package,
 \code{"all_silva_headers.rds"}.}
+
+\item{blast_16S_database}{Logical. Download BLAST 16S database?
+Defaults to \code{TRUE}.}
+
+\item{blast_16S_name}{Character string. Filename (without extension) to save \
+BLAST 16S database.
+Defaults to the file supplied with the package,
+\code{"16S_ribosomal_RNA"}.}
 }
 \value{
 Exports database(s) with names and to location specified by the user.
