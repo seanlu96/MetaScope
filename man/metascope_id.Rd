@@ -18,7 +18,7 @@ metascope_id(
   maxitsEM = 25,
   update_bam = FALSE,
   num_species_plot = NULL,
-  blast_fastas = FALSE,
+  out_fastas = FALSE,
   num_genomes = 100,
   num_reads = 50,
   group_by_taxa = "species",
@@ -47,6 +47,9 @@ and a second \code{character} column supplying the taxon identifying information
 \item{accession_path}{(character) Filepath to NCBI accessions SQL database. See
 \code{taxonomzr::prepareDatabase()}.}
 
+\item{priors_df}{Dataframe containing priors data with columns containing 
+species name and prior weights in percentage.}
+
 \item{tmp_dir}{Path to a directory to which bam and updated bam files can be saved.
 Required.}
 
@@ -69,7 +72,7 @@ such that a BAM file is the input to the function.}
 Default is \code{NULL}, which saves coverage plots for the ten most highly
 abundant species.}
 
-\item{blast_fastas}{Logical, whether or not to output fasta files of reads.
+\item{out_fastas}{Logical, whether or not to output fasta files of reads.
 Default is \code{FALSE}.}
 
 \item{num_genomes}{Number of genomes to output fasta files for
@@ -77,6 +80,9 @@ Default is \code{FALSE}.}
 
 \item{num_reads}{Number of reads per genome per fasta file for
 \code{out_fastas}. Default is \code{50}.}
+
+\item{group_by_taxa}{Character. Taxanomy level to group accessions to. Defaults
+to \code("species")}
 
 \item{quiet}{Turns off most messages. Default is \code{TRUE}.}
 }

@@ -756,6 +756,11 @@ metascope_blast <- function(metascope_id_path,
 #'   BLAST results were output from the \code{metascope_blast} function.
 #'   Referencing the arguments from \code{metascope_blast}, this would be
 #'   \code{file.path(tmp_dir, "blast")}
+#' @param reassign_validated Logical. Should reads from validated accessions be 
+#'   reassigned to other validated accessions. Defaults to \code{FALSE}
+#' @param reassign_to_validated Logical. Should reads only be re-assigned to
+#'   validated accessions or to any accession with more reads than the current
+#'   accession. Defaults to \code{TRUE}
 #' @inheritParams metascope_blast
 #'
 #' @returns Returns a \code{data.frame} with the reassigned taxa and read counts.
