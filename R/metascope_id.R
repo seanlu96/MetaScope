@@ -144,18 +144,20 @@ get_assignments <- function(combined, convEM, maxitsEM, unique_taxids,
     pi_old <- pi_new
     if (!quiet) message(c(it, " ", conv))
   }
-  if (!quiet) message("\tDONE! Converged in ", it, " iterations.")
-  #hit_which <- qlcMatrix::rowMax(gammas_new, which = TRUE)$which
+  if (!quiet) message("DONE! Converged in ", it, " iterations.")
   hit_which <- get_max_index_matrix(gammas_new)
-  hit <- mapply(function(q, r) hit_which[q,r], combined$qname, combined$rname)
-  combined$hit <- hit
-  combined_single <- combined %>% dplyr::group_by(.data$qname, .data$rname) %>%
-    dplyr::mutate("best_hit" = (hit & max(.data$scores) == .data$scores)) %>%
-    dplyr::ungroup() %>% dplyr::group_by(.data$qname) %>%
-    dplyr::mutate("single_hit" = dplyr::row_number() == min(dplyr::row_number()[best_hit]))
-  combined_distinct <- dplyr::distinct(combined, .data$qname, .data$rname,
-                                       .keep_all = TRUE)
-  combined_distinct <- combined_distinct[combined_distinct$hit == TRUE, ]
+  combined <- combined |>
+    dplyr::mutate("hit" = hit_which[cbind(!!rlang::sym("qname"), !!rlang::sym("rname"))])
+  combined_single <- combined |>
+    dplyr::group_by(!!rlang::sym("qname"), !!rlang::sym("rname")) |>
+    dplyr::mutate("best_hit" = !!rlang::sym("hit") &
+                    !!rlang::sym("scores") == max(!!rlang::sym("scores"))) |>
+    dplyr::ungroup() |>
+    dplyr::group_by(!!rlang::sym("qname")) |>
+    dplyr::mutate("single_hit" = dplyr::row_number() == min(dplyr::row_number()[!!rlang::sym("best_hit")]))
+  combined_distinct <- dplyr::distinct(combined, !!rlang::sym("qname"), 
+                                       !!rlang::sym("rname"), .keep_all = TRUE) |>
+    dplyr::filter(!!rlang::sym("hit") == TRUE)
   best_hit <- Matrix::colSums(hit_which)
   names(best_hit) <- seq_along(best_hit)
   best_hit <- best_hit[best_hit != 0]
@@ -383,7 +385,8 @@ metascope_id <- function(input_file, input_type = "csv.gz",
                          priors_df = NULL,
                          tmp_dir = dirname(input_file),
                          out_dir = dirname(input_file),
-                         convEM = 1 / 10000, maxitsEM = 25,
+                         convEM = 1 / 10000,
+                         maxitsEM = 25,
                          update_bam = FALSE,
                          num_species_plot = NULL,
                          out_fastas = FALSE, 
@@ -449,7 +452,6 @@ metascope_id <- function(input_file, input_type = "csv.gz",
     mapped_rname <- stringr::str_split(mapped_rname, ";", n = 2) %>%
       sapply(`[[`, 1)
     accessions <- as.character(unique(mapped_rname))
-    #TODO: GROUP BY SPECIES
   } else if (db == "other") {
     tax_id_all <- dplyr::tibble(`Feature ID` = accessions) %>%
       dplyr::left_join(db_feature_table, by = "Feature ID")
@@ -459,7 +461,7 @@ metascope_id <- function(input_file, input_type = "csv.gz",
   }
 
 
-  # Make an aligment matrix (rows: reads, cols: unique taxids)
+  # Make an alignment matrix (rows: reads, cols: unique taxids)
   if (!quiet) message("Setting up the EM algorithm")
   qname_inds <- match(mapped_qname, read_names)
   if (db == "ncbi") {
@@ -475,9 +477,6 @@ metascope_id <- function(input_file, input_type = "csv.gz",
 
     unique_taxids <- unique_tax_data$taxids
     unique_genome_names <- unique_tax_data$taxa_names
-  }
-  else {
-    # Do something here in case the db isn't ncbi
   }
   # Order based on read names
   rname_tax_inds <- rname_tax_inds[order(qname_inds)]
