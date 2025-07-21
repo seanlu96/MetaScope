@@ -109,6 +109,12 @@ get_assignments <- function(combined, convEM, maxitsEM, unique_taxids,
   pi_old <- rep(1 / nrow(gammas), ncol(gammas))
   pi_new <- theta_new <- Matrix::colMeans(gammas)
   if (!is.null(priors_df)) {
+    if (colnames(priors_df)[1] != "species") {
+      stop("priors_df must have two columns. \n",
+           "The first column is named 'species' and contains the species names. \n",
+           "The second column is named 'prior_weights' and contains the weights.")
+    }
+    colnames(priors_df)[2] <- "prior_weights"
     weights <- tidyr::as_tibble(unique_genome_names) |>
       dplyr::rename("species" = "value") |>
       dplyr::left_join(priors_df, by = "species") |>
