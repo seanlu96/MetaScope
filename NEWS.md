@@ -1,3 +1,9 @@
+# MetaScope devel (Bioc 3.23)
+
+## Bug fixes
+* fixed the metascope_id() function to export the location of the id file
+* Made significant improvements in memory usage in Metascope_id
+
 # MetaScope 1.9.0 (Bioc 3.22)
 
 ## Bug Fixes

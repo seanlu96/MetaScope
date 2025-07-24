@@ -299,16 +299,16 @@ locations <- function(which_taxid, which_genome,
 #'   "csv.gz". Default is "csv.gz".
 #' @param aligner The aligner which was used to create the bam file. Default is
 #'   "bowtie2" but can also be set to "subread" or "other".
-#' @param db Currently accepts one of \code{c("ncbi", "silva", "other")}
-#' Default is \code{"ncbi"}, appropriate for samples aligned against indices
-#' compiled from NCBI whole genome databases. Alternatively, usage of an
-#' alternate database (like Greengenes2) should be specified with
-#' \code{"other"}.
+#' @param db Currently accepts one of \code{c("ncbi", "silva", "other")} Default
+#'   is \code{"ncbi"}, appropriate for samples aligned against indices compiled
+#'   from NCBI whole genome databases. Alternatively, usage of an alternate
+#'   database (like Greengenes2) should be specified with \code{"other"}.
 #' @param db_feature_table If \code{db = "other"}, a data.frame must be supplied
-#' with two columns, "Feature ID" matching the names of the alignment indices,
-#' and a second \code{character} column supplying the taxon identifying information.
-#' @param accession_path (character) Filepath to NCBI accessions SQL database. See
-#'   \code{taxonomzr::prepareDatabase()}.
+#'   with two columns, "Feature ID" matching the names of the alignment indices,
+#'   and a second \code{character} column supplying the taxon identifying
+#'   information.
+#' @param accession_path (character) Filepath to NCBI accessions SQL database.
+#'   See \code{taxonomzr::prepareDatabase()}.
 #' @param out_dir The directory to which the .csv output file will be output.
 #'   Defaults to \code{dirname(input_file)}.
 #' @param convEM The convergence parameter of the EM algorithm. Default set at
@@ -318,11 +318,11 @@ locations <- function(which_taxid, which_genome,
 #'   \code{0}, the algorithm skips the EM step and summarizes the .bam file 'as
 #'   is'.
 #' @param out_fastas Logical, whether or not to output fasta files of reads.
-#' Default is \code{FALSE}.
+#'   Default is \code{FALSE}.
 #' @param num_genomes Number of genomes to output fasta files for
-#' \code{out_fastas}. Default is \code{100}.
+#'   \code{out_fastas}. Default is \code{100}.
 #' @param num_reads Number of reads per genome per fasta file for
-#' \code{out_fastas}. Default is \code{50}.
+#'   \code{out_fastas}. Default is \code{50}.
 #' @param num_species_plot The number of genome coverage plots to be saved.
 #'   Default is \code{NULL}, which saves coverage plots for the ten most highly
 #'   abundant species.
@@ -330,20 +330,21 @@ locations <- function(which_taxid, which_genome,
 #'   Default is \code{FALSE}. If \code{TRUE}, requires \code{input_type = "bam"}
 #'   such that a BAM file is the input to the function.
 #' @param quiet Turns off most messages. Default is \code{TRUE}.
-#' @param tmp_dir Path to a directory to which bam and updated bam files can be saved.
-#' Required.
-#' @param priors_df data.frame containing priors data with columns containing 
-#'  species name and prior weights in percentage.
-#' @param group_by_taxa Character. Taxonomy level at which accessions should be grouped. Defaults
-#'  to \code{"species"}
+#' @param tmp_dir Path to a directory to which bam and updated bam files can be
+#'   saved. Required.
+#' @param priors_df data.frame containing priors data. The data.frame consists
+#'   of two columns, 'species' containing species name, and 'prior_weights'
+#'   containing the prior weights (as a percent; integer).
+#' @param group_by_taxa Character. Taxonomy level at which accessions should be
+#'   grouped. Defaults to \code{"species"}
 #'
-#' @return This function returns a .csv file with annotated read counts to
-#'   genomes with mapped reads. The function itself returns the output .csv file
-#'   name. Depending on the parameters specified, can also output an updated
-#'   BAM file, and fasta files for additional analysis downstream.
+#' @return This function exports a .csv file with annotated read counts to
+#'   genomes with mapped reads to the location returned by the function.
+#'   Depending on the parameters specified, can also output an updated BAM
+#'   file, and fasta files for additional analysis downstream.
 #'
 #' @export
-#'
+#' 
 #' @examples
 #' #### Align reads to reference library and then apply metascope_id()
 #' ## Assuming filtered bam files already exist
@@ -416,6 +417,7 @@ metascope_id <- function(input_file, input_type = "csv.gz",
     if (!quiet) message("Note, cannot generate fastas or updated_bam from csv.gz file")
     out_fastas <- FALSE
     update_bam <- FALSE
+    if (update_bam) stop("`update_bam` is set to TRUE but input is a `csv.gz`")
   }
   # Check that tmp_dir is specified
   if (is.null(tmp_dir)) stop("Please supply a directory for 'tmp_dir' argument.")
@@ -593,5 +595,5 @@ metascope_id <- function(input_file, input_type = "csv.gz",
                        which_genome = metascope_id_file$Genome[x],
                        accessions, taxids, reads, out_base, out_dir)})
   } else if (!quiet) message("No coverage plots created")
-  return(metascope_id_file)
+  return(out_file)
 }
