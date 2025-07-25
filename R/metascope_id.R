@@ -15,12 +15,8 @@ get_max_index_matrix <- function(mat) {
   return(is_max)
 }
 
-obtain_reads <- function(input_file, input_type, aligner, out_fastas = FALSE, quiet) {
-  if (out_fastas) {
-    to_pull <- c("qname", "rname", "cigar", "qwidth", "pos", "seq")
-  } else {
-    to_pull <- c("qname", "rname", "cigar", "qwidth", "pos")
-  }
+obtain_reads <- function(input_file, input_type, aligner, quiet) {
+  to_pull <- c("qname", "rname", "cigar", "qwidth", "pos")
   if (identical(input_type, "bam")) {
     if (!quiet) message("Reading .bam file: ", input_file)
     if (identical(aligner, "bowtie2")) {
@@ -169,7 +165,7 @@ get_assignments <- function(combined, convEM, maxitsEM, unique_taxids,
     dplyr::ungroup() |>
     dplyr::group_by(!!rlang::sym("qname")) |>
     dplyr::mutate("single_hit" = dplyr::row_number() == min(dplyr::row_number()[!!rlang::sym("best_hit")]))
-  combined_distinct <- dplyr::distinct(combined, !!rlang::sym("qname"), 
+  combined_distinct <- dplyr::distinct(combined, !!rlang::sym("qname"),
                                        !!rlang::sym("rname"), .keep_all = TRUE) |>
     dplyr::filter(!!rlang::sym("hit") == TRUE)
   best_hit <- Matrix::colSums(hit_which)
@@ -325,12 +321,6 @@ locations <- function(which_taxid, which_genome,
 #'   the convEM is below the threshhold. Default set at \code{50}. If set at
 #'   \code{0}, the algorithm skips the EM step and summarizes the .bam file 'as
 #'   is'.
-#' @param out_fastas Logical, whether or not to output fasta files of reads.
-#'   Default is \code{FALSE}.
-#' @param num_genomes Number of genomes to output fasta files for
-#'   \code{out_fastas}. Default is \code{100}.
-#' @param num_reads Number of reads per genome per fasta file for
-#'   \code{out_fastas}. Default is \code{50}.
 #' @param num_species_plot The number of genome coverage plots to be saved.
 #'   Default is \code{NULL}, which saves coverage plots for the ten most highly
 #'   abundant species.
@@ -352,7 +342,7 @@ locations <- function(which_taxid, which_genome,
 #'   file, and fasta files for additional analysis downstream.
 #'
 #' @export
-#' 
+#'
 #' @examples
 #' #### Align reads to reference library and then apply metascope_id()
 #' ## Assuming filtered bam files already exist
@@ -404,9 +394,6 @@ metascope_id <- function(input_file, input_type = "csv.gz",
                          maxitsEM = 25,
                          update_bam = FALSE,
                          num_species_plot = NULL,
-                         out_fastas = FALSE, 
-                         num_genomes = 100,
-                         num_reads = 50,
                          group_by_taxa = "species",
                          quiet = TRUE)  {
 
@@ -422,21 +409,19 @@ metascope_id <- function(input_file, input_type = "csv.gz",
     stop("Please supply a data.frame for db_feature_table if 'db = other'")
   }
   if (input_type == "csv.gz") {
-    if (!quiet) message("Note, cannot generate fastas or updated_bam from csv.gz file")
-    out_fastas <- FALSE
+    if (!quiet) message("Note, cannot generate updated_bam from csv.gz file")
     update_bam <- FALSE
     if (update_bam) stop("`update_bam` is set to TRUE but input is a `csv.gz`")
   }
   # Check that tmp_dir is specified
   if (is.null(tmp_dir)) stop("Please supply a directory for 'tmp_dir' argument.")
-  reads <- obtain_reads(input_file, input_type, aligner, out_fastas, quiet)
+  reads <- obtain_reads(input_file, input_type, aligner, quiet)
   unmapped <- is.na(reads[[1]]$rname)
   if (db == "ncbi") reads[[1]]$rname <- identify_rnames(reads)
   mapped_rname <- as.character(reads[[1]]$rname[!unmapped])
   mapped_qname <- reads[[1]]$qname[!unmapped]
   mapped_cigar <- reads[[1]]$cigar[!unmapped]
   mapped_qwidth <- reads[[1]]$qwidth[!unmapped]
-  if (out_fastas) mapped_seqs <- reads[[1]]$seq[!unmapped]
   if (aligner == "bowtie2") {
     # mapped alignments used
     map_edit_or_align <- reads[[1]][["tag"]][["AS"]][!unmapped]
@@ -498,7 +483,6 @@ metascope_id <- function(input_file, input_type = "csv.gz",
   rname_tax_inds <- rname_tax_inds[order(qname_inds)]
   cigar_strings <- mapped_cigar[order(qname_inds)]
   qwidths <- mapped_qwidth[order(qname_inds)]
-  if (out_fastas) mapped_seqs <- mapped_seqs[order(qname_inds)]
 
   if (aligner == "bowtie2") {
     # mapped alignments used
@@ -520,24 +504,6 @@ metascope_id <- function(input_file, input_type = "csv.gz",
                                                       "readsEM", "EMProportion")
   utils::write.csv(metascope_id_file, file = out_file, row.names = FALSE)
   if (!quiet) message("Results written to ", out_file)
-
-  if (out_fastas){
-    combined_single <- results[[3]]
-    num_genomes <- min(num_genomes, nrow(results[[1]]))
-    new_file <- file.path(tmp_dir, "fastas")
-    if(!dir.exists(new_file)) dir.create(new_file)
-    for (i in seq.int(1, num_genomes)) {
-      current_rname_ind <- results[[1]]$hits_ind[i]
-      read_indices <- combined_single %>%
-        dplyr::filter(.data$rname == current_rname_ind, .data$best_hit == TRUE) %>%
-        dplyr::pull("index")
-      current_num_reads <- min(num_reads, length(read_indices))
-      read_indices <- read_indices %>% sample(current_num_reads)
-      seqs <- mapped_seqs[read_indices]
-      Biostrings::writeXStringSet(seqs,
-                                  file.path(tmp_dir, "fastas", paste0(sprintf("%04d", i), ".fa")))
-    }
-  }
 
   if (update_bam) {
     # Convert accessions back into taxids. Some taxids may be from different accessions

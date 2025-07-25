@@ -18,9 +18,6 @@ metascope_id(
   maxitsEM = 25,
   update_bam = FALSE,
   num_species_plot = NULL,
-  out_fastas = FALSE,
-  num_genomes = 100,
-  num_reads = 50,
   group_by_taxa = "species",
   quiet = TRUE
 )
@@ -72,15 +69,6 @@ such that a BAM file is the input to the function.}
 \item{num_species_plot}{The number of genome coverage plots to be saved.
 Default is \code{NULL}, which saves coverage plots for the ten most highly
 abundant species.}
-
-\item{out_fastas}{Logical, whether or not to output fasta files of reads.
-Default is \code{FALSE}.}
-
-\item{num_genomes}{Number of genomes to output fasta files for
-\code{out_fastas}. Default is \code{100}.}
-
-\item{num_reads}{Number of reads per genome per fasta file for
-\code{out_fastas}. Default is \code{50}.}
 
 \item{group_by_taxa}{Character. Taxonomy level at which accessions should be
 grouped. Defaults to \code{"species"}}
