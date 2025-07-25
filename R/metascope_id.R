@@ -1,9 +1,17 @@
 globalVariables("count")
 
-
 get_max_index_matrix <- function(mat) {
-  row_max_values <- apply(mat, 1, max)  # Find maximum value in each row
-  is_max <- sweep(mat, 1, row_max_values, "==")  # Compare each element with row max
+  stopifnot(inherits(mat, "Matrix"))  # Ensure sparse Matrix
+  # Convert to triplet format for efficient row-wise max
+  trip <- Matrix::summary(mat)
+  row_max <- tapply(trip$x, trip$i, max)
+  # Keep only entries that match the row max
+  keep <- trip$x == row_max[as.character(trip$i)]
+  # Build a new sparse logical matrix marking max positions
+  is_max <- Matrix::sparseMatrix(i = trip$i[keep],
+               j = trip$j[keep],
+               x = TRUE,
+               dims = dim(mat))
   return(is_max)
 }
 

@@ -34,24 +34,25 @@ metascope_id(
 \item{aligner}{The aligner which was used to create the bam file. Default is
 "bowtie2" but can also be set to "subread" or "other".}
 
-\item{db}{Currently accepts one of \code{c("ncbi", "silva", "other")}
-Default is \code{"ncbi"}, appropriate for samples aligned against indices
-compiled from NCBI whole genome databases. Alternatively, usage of an
-alternate database (like Greengenes2) should be specified with
-\code{"other"}.}
+\item{db}{Currently accepts one of \code{c("ncbi", "silva", "other")} Default
+is \code{"ncbi"}, appropriate for samples aligned against indices compiled
+from NCBI whole genome databases. Alternatively, usage of an alternate
+database (like Greengenes2) should be specified with \code{"other"}.}
 
 \item{db_feature_table}{If \code{db = "other"}, a data.frame must be supplied
 with two columns, "Feature ID" matching the names of the alignment indices,
-and a second \code{character} column supplying the taxon identifying information.}
+and a second \code{character} column supplying the taxon identifying
+information.}
 
-\item{accession_path}{(character) Filepath to NCBI accessions SQL database. See
-\code{taxonomzr::prepareDatabase()}.}
+\item{accession_path}{(character) Filepath to NCBI accessions SQL database.
+See \code{taxonomzr::prepareDatabase()}.}
 
-\item{priors_df}{data.frame containing priors data with columns containing 
-species name and prior weights in percentage.}
+\item{priors_df}{data.frame containing priors data. The data.frame consists
+of two columns, 'species' containing species name, and 'prior_weights'
+containing the prior weights (as a percent; integer).}
 
-\item{tmp_dir}{Path to a directory to which bam and updated bam files can be saved.
-Required.}
+\item{tmp_dir}{Path to a directory to which bam and updated bam files can be
+saved. Required.}
 
 \item{out_dir}{The directory to which the .csv output file will be output.
 Defaults to \code{dirname(input_file)}.}
@@ -81,16 +82,16 @@ Default is \code{FALSE}.}
 \item{num_reads}{Number of reads per genome per fasta file for
 \code{out_fastas}. Default is \code{50}.}
 
-\item{group_by_taxa}{Character. Taxonomy level at which accessions should be grouped. Defaults
-to \code{"species"}}
+\item{group_by_taxa}{Character. Taxonomy level at which accessions should be
+grouped. Defaults to \code{"species"}}
 
 \item{quiet}{Turns off most messages. Default is \code{TRUE}.}
 }
 \value{
-This function returns a .csv file with annotated read counts to
-  genomes with mapped reads. The function itself returns the output .csv file
-  name. Depending on the parameters specified, can also output an updated
-  BAM file, and fasta files for additional analysis downstream.
+This function exports a .csv file with annotated read counts to
+  genomes with mapped reads to the location returned by the function.
+  Depending on the parameters specified, can also output an updated BAM
+  file, and fasta files for additional analysis downstream.
 }
 \description{
 This function will read in a .bam or .csv.gz file, annotate the taxonomy and
