@@ -35,7 +35,7 @@ Referencing the arguments from \code{metascope_blast}, this would be
 
 \item{sample_name}{Character string, sample name for output files.}
 
-\item{reassign_validated}{Logical. Should reads from validated accessions be 
+\item{reassign_validated}{Logical. Should reads from validated accessions be
 reassigned to other validated accessions. Defaults to \code{FALSE}}
 
 \item{reassign_to_validated}{Logical. Should reads only be re-assigned to
