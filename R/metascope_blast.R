@@ -25,7 +25,7 @@ find_taxids <- function(all_fastas, accession_path) {
                   "species" = taxonomizr::getTaxonomy(!!dplyr::sym("TaxonomyID"), sqlFile = accession_path,
                                                       desiredTaxa = "species")[,])
   }
-  return(accesions_taxids)
+  return(accessions_taxids)
 }
 
 
@@ -685,7 +685,17 @@ metascope_blast <- function(metascope_id_path,
     metascope_id_species <- add_in_taxa(metascope_id_in, caching = FALSE,           # TODO Add initialization steps to install required databases
                                     path_to_write = tmp_dir)
   } else if (db == "ncbi") {
-    metascope_id_species <- add_in_taxa_ncbi(metascope_id_in, accession = accession_path, BPPARAM = BPPARAM)
+    tax_df <- taxonomizr::getTaxonomy(metascope_id_in$TaxonomyID, sqlFile = accession_path)
+    rownames(tax_df) <- trimws(rownames(tax_df))
+    tax_df <- as.data.frame(tax_df) |> 
+      tibble::rownames_to_column("TaxonomyID") |>
+      dplyr::mutate(TaxonomyID = ifelse(grepl("NA", TaxonomyID, fixed=TRUE), 
+                                        NA, 
+                                        gsub("^X[.]?", "", TaxonomyID))) |>
+      dplyr::filter(!is.na(TaxonomyID)) |>
+      dplyr::mutate(TaxonomyID = as.integer(TaxonomyID))
+      
+    metascope_id_species <- dplyr::left_join(metascope_id_in, tax_df, by = dplyr::join_by(TaxonomyID))
   }
 
   # Create fasta directory in tmp directory to save fasta sequences
@@ -700,9 +710,16 @@ metascope_blast <- function(metascope_id_path,
   # Write Fastas
   write_fastas <- function(i) {
     current_species <- metascope_id_species$species[i]
-    current_accessions <- accessions_taxids |>
-      dplyr::filter(!!dplyr::sym("species") == current_species) |>
-      dplyr::pull("accessions")
+    if (!is.na(current_species)) {
+      current_accessions <- accessions_taxids |>
+        dplyr::filter(!!dplyr::sym("species") == current_species) |>
+        dplyr::pull("accessions")
+    } else {
+      accession_id <- gsub("unknown genome; accession ID is", "", 
+                           metascope_id_species$Genome[i])
+      current_accessions_id <- grep(accession_id, accessions_taxids$accessions)
+      current_accessions <- accessions_taxids$accessions[current_accessions_id[1]]
+    }
     seqs <- all_fastas[names(all_fastas) %in% current_accessions]
     seqs <- sample(seqs, size = min(length(seqs), num_reads))
     Biostrings::writeXStringSet(
