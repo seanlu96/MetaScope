@@ -7,28 +7,28 @@
 #' @param accession_path Path to taxonomizr accessions database
 #' @keywords internal
 #' @return Data.frame of taxonomy Ids and Species name
+#'
 
 find_taxids <- function(all_fastas, accession_path) {
   if (grepl("ti|",names(all_fastas)[1], fixed = TRUE)){
     accessions_taxids <- tibble::tibble(
       "accessions" = unique(names(all_fastas))) |>
       dplyr::mutate(
-        "TaxonomyID" = as.numeric(str_match(accessions, "ti\\|(\\d+)\\|")[,2]),
+        "TaxonomyID" = as.numeric(stringr::str_match(!!dplyr::sym("accessions"),
+                                                     "ti\\|(\\d+)\\|")[,2]),
         "species" = taxonomizr::getTaxonomy(!!dplyr::sym("TaxonomyID"),
                                             sqlFile = accession_path,
                                             desiredTaxa = "species")[,]
-        )
-  }
-  else {
-  accessions_taxids <- tibble::tibble("accessions" = unique(names(all_fastas))) |>
-    dplyr::mutate("TaxonomyID" = taxonomizr::accessionToTaxa(!!dplyr::sym("accessions"), accession_path),
-                  "species" = taxonomizr::getTaxonomy(!!dplyr::sym("TaxonomyID"), sqlFile = accession_path,
-                                                      desiredTaxa = "species")[,])
+      )
+  } else {
+    accessions_taxids <- tibble::tibble("accessions" = unique(names(all_fastas))) |>
+      dplyr::mutate("TaxonomyID" = taxonomizr::accessionToTaxa(!!dplyr::sym("accessions"), accession_path),
+                    "species" = taxonomizr::getTaxonomy(!!dplyr::sym("TaxonomyID"),
+                                                        sqlFile = accession_path,
+                                                        desiredTaxa = "species")[,])
   }
   return(accessions_taxids)
 }
-
-
 
 #' Adds in taxa if silva database
 
