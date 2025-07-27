@@ -689,13 +689,14 @@ metascope_blast <- function(metascope_id_path,
     rownames(tax_df) <- trimws(rownames(tax_df))
     tax_df <- as.data.frame(tax_df) |> 
       tibble::rownames_to_column("TaxonomyID") |>
-      dplyr::mutate(TaxonomyID = ifelse(grepl("NA", TaxonomyID, fixed=TRUE), 
+      dplyr::mutate("TaxonomyID" = ifelse(grepl("NA", !!dplyr::sym("TaxonomyID"), fixed=TRUE), 
                                         NA, 
-                                        gsub("^X[.]?", "", TaxonomyID))) |>
-      dplyr::filter(!is.na(TaxonomyID)) |>
-      dplyr::mutate(TaxonomyID = as.integer(TaxonomyID))
+                                        gsub("^X[.]?", "", !!dplyr::sym("TaxonomyID")))) |>
+      dplyr::filter(!is.na(!!dplyr::sym("TaxonomyID"))) |>
+      dplyr::mutate("TaxonomyID" = as.integer(!!dplyr::sym("TaxonomyID")))
       
-    metascope_id_species <- dplyr::left_join(metascope_id_in, tax_df, by = dplyr::join_by(TaxonomyID))
+    metascope_id_species <- dplyr::left_join(metascope_id_in, tax_df,
+                                             by = "TaxonomyID")
   }
 
   # Create fasta directory in tmp directory to save fasta sequences
