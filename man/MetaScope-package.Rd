@@ -17,11 +17,11 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Aubrey Odom \email{aodom@bu.edu} (\href{https://orcid.org/0000-0001-7113-7598}{ORCID})
+\strong{Maintainer}: Sean Lu \email{seanlu96@gmail.com} (\href{https://orcid.org/0009-0007-8005-6125}{ORCID})
 
 Authors:
 \itemize{
-  \item Sean Lu \email{sl1729@njms.rutgers.edu} (\href{https://orcid.org/0009-0007-8005-6125}{ORCID})
+  \item Aubrey Odom \email{aodom@bu.edu} (\href{https://orcid.org/0000-0001-7113-7598}{ORCID})
   \item Rahul Varki \email{rvarki@bu.edu} (\href{https://orcid.org/0009-0003-5721-9484}{ORCID})
   \item W. Evan Johnson \email{wej@bu.edu} (\href{https://orcid.org/0000-0002-6247-6595}{ORCID})
 }
