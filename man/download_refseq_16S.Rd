@@ -8,6 +8,7 @@ download_refseq_16S(out_dir, combined_name = "refseq_16S.fna")
 }
 \arguments{
 \item{out_dir}{Character string giving the name of the directory to which
+<<<<<<< HEAD
 libraries should be output. **Required**}
 
 \item{combined_name}{Name of output combined file. Default is
@@ -34,4 +35,32 @@ This function requires the suggested packages \pkg{RCurl} and
 download_refseq_16S(out_dir = "out_dir",
   combined_name = "refseq_16S.fna")
   }
+=======
+libraries should be output. Defaults to creation of a new temporary
+directory.}
+
+\item{combined_name}{Name of output combined file. Default is 
+\code{"refseq_16S.fna"}}
+}
+\value{
+Returns a character string of the path to the combined 16S rRNA .fna 
+   file
+}
+\description{
+This function will automatically download the 16S rRNA RefSeq libraries from 
+\code{https://ftp.ncbi.nlm.nih.gov/refseq/TargetedLoci/} and combine them 
+into a single .fna file
+}
+\note{
+This function requires the suggested packages \pkg{RCurl} and 
+   \pkg{R.utils}. If they are not installed, you will need to install 
+   them manually.
+}
+\examples{
+#### Download 16S rRNA Genomes
+
+download_refseq_16S <- function(out_dir = "out_dir", 
+  combined_name = "refseq_16S.fna")
+
+>>>>>>> cfcde867872df61f1e458082f242d2d5bb9c201d
 }
