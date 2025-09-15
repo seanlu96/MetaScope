@@ -78,6 +78,7 @@ run_metascope <- function(
   # Run download_refseq_16S if it is not already downloaded (Currently assumes default refseq name) 
   ref_fna <- file.path(ref_dir, "refseq_16S.fna")
   if (!file.exists(ref_fna)) {
+    message("16S Refseq Not Found, Dowloading from NCBI FTP")
     download_refseq_16S(out_dir = ref_dir, combined_name = "refseq_16S.fna")
   } 
   else {
@@ -93,16 +94,18 @@ run_metascope <- function(
                                     "16S_ribosomal_RNA.rev.2.bt2"))
   
   if (!all(file.exists(bt2_files))) { 
+    message("16S Ribosomal RNA bowtie Indices Not Found. Building Bowtie Indices:")
     mk_bowtie_index(ref_dir = ref_dir, 
                     lib_dir = ref_dir, 
                     lib_name = "16S_ribosomal_RNA",
-                    bowtie2_build_options = bowtie2_build_options, 
-                    threads = threads, 
-                    overwrite = FALSE)
+                    ...)
+  } else {
+    message("16S Ribosoaml Index Found in: ", ref_dir)
   }
   
   # Download Taxonomy Accessions
   if (!(file.exists(file.path(ref_dir, "accessionTaxa.sql")))) {
+    message("Taxonomy Accessions Database Not Found. Downloading from NCBI FTP.")
     download_accessions(ref_dir,
                         tmp_dir = file.path(ref_dir, "tmp"),
                         remove_tmp_dir = TRUE,
@@ -144,7 +147,7 @@ run_metascope <- function(
                                      threads = threads, 
                                      overwrite = FALSE, 
                                      quiet = TRUE)
-                    
+      
       id_out <- metascope_id(input_file = bam_out, 
                              input_type = "bam",
                              aligner = "bowtie2",
