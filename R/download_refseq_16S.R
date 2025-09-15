@@ -35,13 +35,11 @@ download_refseq_16S <- function(out_dir,
   if (!requireNamespace("R.utils", quietly = TRUE)) {
     stop("Package 'R.utils' is required for download_refseq_16s_only(). Please install it.", call. = FALSE)
   }
-
-  # Import namespaces explicitly
-  RCurl <- asNamespace("RCurl")
-  R.utils <- asNamespace("R.utils")
+  if (!requireNamespace("stringr", quietly = TRUE)) {
+    stop("Package 'R.utils' is required for download_refseq_16s_only(). Please install it.", call. = FALSE)
+  }
 
   # Create Directory
-  dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
   dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
   base_urls <- c(
@@ -50,8 +48,8 @@ download_refseq_16S <- function(out_dir,
   )
 
   download_from_url <- function(url, local_dir) {
-    listing <- str_split(getURL(url, ftp.use.epsv = TRUE, dirlistonly = TRUE), "\n")[[1]]
-    listing <- str_trim(listing)
+    listing <- stringr::str_split(RCurl::getURL(url, ftp.use.epsv = TRUE, dirlistonly = TRUE), "\n")[[1]]
+    listing <- stringr::str_trim(listing)
     listing <- listing[listing != ""]
 
     for (item in listing) {
@@ -84,7 +82,7 @@ download_refseq_16S <- function(out_dir,
 
   for (gz in gz_files) {
     tryCatch({
-      gunzip(gz, overwrite = TRUE, remove = TRUE)  # decompress & remove .gz
+      R.utils::gunzip(gz, overwrite = TRUE, remove = TRUE)  # decompress & remove .gz
       message("Unzipped: ", gz)
     }, error = function(e) {
       message("Failed to unzip: ", gz)
