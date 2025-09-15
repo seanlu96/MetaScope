@@ -56,6 +56,8 @@ mk_bowtie_index <- function(ref_dir, lib_dir, lib_name, bowtie2_build_options,
                                        "--threads", threads)
     }
     ref_dir <- dir(ref_dir, full.names = TRUE)
+    # Create lib directory if it doesn't exist
+    dir.create(lib_dir, showWarnings = FALSE)
     # Convert user specified path to absolute path for debugging purposes
     lib_dir <- tools::file_path_as_absolute(lib_dir)
     # Call the bowtie2_build function from Rbowtie2
