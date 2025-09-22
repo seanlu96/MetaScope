@@ -23,6 +23,7 @@
 #'   Defaults to \code{"~/MetaScope/out"}.
 #' @param threads Integer. Number of CPU threads to use for Bowtie2 alignment
 #'   and indexing. Default is \code{1}.
+#' @param combine_results Boolean to merge all samples into one feature table
 #' @param ... Additional arguments passed to \code{metascope_id()}.
 #'
 #' @details
@@ -62,7 +63,8 @@ run_metascope <- function(
     paired_reads = FALSE, 
     tmp_dir = "~/MetaScope/tmp", 
     out_dir = "~/MetaScope/out",
-    threads = 1, 
+    threads = 1,
+    combine_results = TRUE,
     ...) {
   
   # Parse ... arguments
@@ -159,7 +161,8 @@ run_metascope <- function(
                                              tmp_dir = tmp_out,
                                              out_dir = out_dir), 
                                         extra_args_metascope_id))
-    }) 
+    })
+    names(results) <- basename(fq_files) |> sub("\\.fastq(.gz)?$|\\.fq(.gz)?$", "", .)
   } else {
     message("Running paired-end alignment and MetaScopeID...")
     # assumes R1/R2 naming convention
@@ -193,7 +196,25 @@ run_metascope <- function(
                                              out_dir = out_dir), 
                                         extra_args_metascope_id))
     }, fq_R1, fq_R2)
+  names(results) <- sub("_R1.*", "", basename(fq_R1))
   }
-  names(results) <- basename(fq_files)
-  return(results)
+  if (!combine_results) {
+    return(results)
+  }
+  else {
+    if (length(results_paths) == 0) stop("No MetaScope ID outputs found in: ", out_dir)
+    # Read in all results
+    all_res <- results |>
+      purrr::map(function(path) {
+        sample_name = sub(".metascope_id.csv", "", basename(path))
+        read.csv(path) |>
+          dplyr::select(TaxonomyID, Genome, readsEM) |>
+          dplyr::rename(!!sample_name := readsEM)
+      })
+    # Merge together and rename column
+    merged_res <- purrr::reduce(all_res, dplyr::full_join, by = c("TaxonomyID", "Genome")) |>
+      dplyr::mutate(dplyr::across(-c(TaxonomyID, Genome), ~ tidyr::replace_na(., 0)))
+    write.csv(merged_res, file = file.path(out_dir, "metascope_results.csv"))
+    return(merged_res)
+  }
 }
