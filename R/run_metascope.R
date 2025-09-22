@@ -65,6 +65,8 @@ run_metascope <- function(
     threads = 1, 
     ...) {
   
+  # Parse ... arguments
+  extra_args <- list(...)
   # Currently only works for 16S
   if (sequencing_type != "16S") {
     stop("Currently only 16S sequencing is supported.")
@@ -95,17 +97,18 @@ run_metascope <- function(
   
   if (!all(file.exists(bt2_files))) { 
     message("16S Ribosomal RNA bowtie Indices Not Found. Building Bowtie Indices:")
-    mk_bowtie_index(ref_dir = ref_dir, 
-                    lib_dir = ref_dir, 
-                    lib_name = "16S_ribosomal_RNA",
-                    ...)
+    extra_args_mk_bowtie_index <- extra_args[names(extra_args) %in% names(formals(mk_bowtie_index))]
+    do.call(mk_bowtie_index, c(list(ref_dir = ref_dir, 
+                                    lib_dir = ref_dir, 
+                                    lib_name = "16S_ribosomal_RNA"), 
+                               extra_args_mk_bowtie_index))
   } else {
     message("16S Ribosoaml Index Found in: ", ref_dir)
   }
   
   # Download Taxonomy Accessions
   if (!(file.exists(file.path(ref_dir, "accessionTaxa.sql")))) {
-    message("Taxonomy Accessions Database Not Found. Downloading from NCBI FTP.")
+    message("Taxonomy Accessions Database Not Found. Downloading from NCBI FTP. This may take a while")
     download_accessions(ref_dir,
                         tmp_dir = file.path(ref_dir, "tmp"),
                         remove_tmp_dir = TRUE,
@@ -147,15 +150,15 @@ run_metascope <- function(
                                      threads = threads, 
                                      overwrite = FALSE, 
                                      quiet = TRUE)
-      
-      id_out <- metascope_id(input_file = bam_out, 
-                             input_type = "bam",
-                             aligner = "bowtie2",
-                             db = "ncbi",
-                             accession_path = file.path(ref_dir, "accessionTaxa.sql"),
-                             tmp_dir = tmp_out,
-                             out_dir = out_dir, 
-                             ...)
+      extra_args_metascope_id <- extra_args[names(extra_args) %in% names(formals(metascope_id))]
+      id_out <- do.call(metascope_id, c(list(input_file = bam_out, 
+                                             input_type = "bam",
+                                             aligner = "bowtie2",
+                                             db = "ncbi",
+                                             accession_path = file.path(ref_dir, "accessionTaxa.sql"),
+                                             tmp_dir = tmp_out,
+                                             out_dir = out_dir), 
+                                        extra_args_metascope_id))
     }) 
   } else {
     message("Running paired-end alignment and MetaScopeID...")
@@ -180,14 +183,15 @@ run_metascope <- function(
                                      overwrite = FALSE, 
                                      quiet = TRUE)
       
-      id_out <- metascope_id(input_file = bam_out, 
-                             input_type = "bam",
-                             aligner = "bowtie2",
-                             db = "ncbi",
-                             accession_path = file.path(ref_dir, "accessionTaxa.sql"),
-                             tmp_dir = tmp_out,
-                             out_dir = out_dir, 
-                             ...)
+      extra_args_metascope_id <- extra_args[names(extra_args) %in% names(formals(metascope_id))]
+      id_out <- do.call(metascope_id, c(list(input_file = bam_out, 
+                                             input_type = "bam",
+                                             aligner = "bowtie2",
+                                             db = "ncbi",
+                                             accession_path = file.path(ref_dir, "accessionTaxa.sql"),
+                                             tmp_dir = tmp_out,
+                                             out_dir = out_dir), 
+                                        extra_args_metascope_id))
     }, fq_R1, fq_R2)
   }
   names(results) <- basename(fq_files)

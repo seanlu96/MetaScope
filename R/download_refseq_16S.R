@@ -36,7 +36,7 @@ download_refseq_16S <- function(out_dir,
     stop("Package 'R.utils' is required for download_refseq_16s_only(). Please install it.", call. = FALSE)
   }
   if (!requireNamespace("stringr", quietly = TRUE)) {
-    stop("Package 'R.utils' is required for download_refseq_16s_only(). Please install it.", call. = FALSE)
+    stop("Package 'stringr' is required for download_refseq_16s_only(). Please install it.", call. = FALSE)
   }
 
   # Create Directory
@@ -62,7 +62,7 @@ download_refseq_16S <- function(out_dir,
         file_url <- paste0(url, item)
         dest_file <- file.path(local_dir, item)
         tryCatch({
-          download.file(file_url, destfile = dest_file, quiet = TRUE, mode = "wb")
+          utils::download.file(file_url, destfile = dest_file, quiet = TRUE, mode = "wb")
           message("Downloaded: ", file_url)
         }, error = function(e) {
           message("Failed to download: ", file_url)
