@@ -27,3 +27,11 @@ if (!requireNamespace("BiocManager", quietly = TRUE))
   install.packages("BiocManager")
 BiocManager::install("MetaScope")
 ```
+
+## Docker
+
+A prebuilt Docker image of MetaScope is available, which comes with the 16S reference database and accession mappings preinstalled. You can pull it directly from Docker Hub:
+```
+docker pull seanlu96/metascope_16s:latest
+```
+This container provides a ready-to-use environment for running MetaScope without additional setup.
