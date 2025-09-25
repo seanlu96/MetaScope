@@ -141,17 +141,15 @@ run_metascope <- function(
     results <- lapply(fq_files, function(fq) {
       tmp_out <- file.path(tmp_dir, paste0(sample_name(fq)))
       dir.create(tmp_out, showWarnings = FALSE) 
-      
-      bam_out <- align_target_bowtie(read1 = fq, 
-                                     read2 = NULL, 
-                                     lib_dir = ref_dir, 
-                                     libs = "16S_ribosomal_RNA",
-                                     align_dir = tmp_out,
-                                     align_file = sample_name(fq), 
-                                     bowtie2_options = NULL,
-                                     threads = threads, 
-                                     overwrite = FALSE, 
-                                     quiet = TRUE)
+      extra_args_align_target_bowtie <- extra_args[names(extra_args) %in% names(formals(align_target_bowtie))]
+      bam_out <- do.call(align_target_bowtie, c(list(read1 = fq, 
+                                                     read2 = NULL, 
+                                                     lib_dir = ref_dir, 
+                                                     libs = "16S_ribosomal_RNA",
+                                                     align_dir = tmp_out,
+                                                     align_file = sample_name(fq), 
+                                                     threads = threads), 
+                                                 extra_args_align_target_bowtie))
       extra_args_metascope_id <- extra_args[names(extra_args) %in% names(formals(metascope_id))]
       id_out <- do.call(metascope_id, c(list(input_file = bam_out, 
                                              input_type = "bam",
@@ -174,17 +172,15 @@ run_metascope <- function(
       sample_base_name <- sub("_R1.*", "", basename(r1))
       tmp_out <- file.path(tmp_dir, sample_base_name)
       dir.create(tmp_out, showWarnings = FALSE) 
-      
-      bam_out <- align_target_bowtie(read1 = r1, 
-                                     read2 = r2, 
-                                     lib_dir = ref_dir, 
-                                     libs = "16S_ribosomal_RNA",
-                                     align_dir = tmp_out,
-                                     align_file = sample_base_name, 
-                                     bowtie2_options = NULL,
-                                     threads = threads, 
-                                     overwrite = FALSE, 
-                                     quiet = TRUE)
+      extra_args_align_target_bowtie <- extra_args[names(extra_args) %in% names(formals(align_target_bowtie))]
+      bam_out <- do.call(align_target_bowtie, c(list(read1 = r1, 
+                                                     read2 = r2, 
+                                                     lib_dir = ref_dir, 
+                                                     libs = "16S_ribosomal_RNA",
+                                                     align_dir = tmp_out,
+                                                     align_file = sample_base_name, 
+                                                     threads = threads), 
+                                                 extra_args_align_target_bowtie))
       
       extra_args_metascope_id <- extra_args[names(extra_args) %in% names(formals(metascope_id))]
       id_out <- do.call(metascope_id, c(list(input_file = bam_out, 
