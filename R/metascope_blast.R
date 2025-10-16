@@ -291,10 +291,9 @@ blastn_single_result <- function(results_table, bam_file, which_result,
                                  accession_path, bam_seqs, out_path,
                                  sample_name, fasta_dir = NULL) {
   res <- tryCatch({ #If any errors, should just skip the organism
-    genome_name <- results_table[which_result, 8]
+    genome_name <- results_table$Genome[which_result]
     if (!quiet) message("Current id: ", genome_name)
-    tax_id <- results_table[which_result, 14] |> stringr::str_split(",") |>
-      dplyr::first() |> dplyr::first() # Grabs First TaxID
+    tax_id <- results_table$TaxonomyID[which_result]
     if (!quiet) message("Current ti: ", tax_id)
     # Generate sequences to blast
     if (!is.null(fasta_dir)) {
