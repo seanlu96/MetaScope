@@ -539,23 +539,31 @@ metascope_id <- function(input_file, input_type = "csv.gz",
 
     filter_which <- rep(FALSE, nrow(bam_index_df))
     filter_which[combined_bam_index$original_bam_index] <- TRUE
-
-    bam_out <- file.path(tmp_dir, paste0(out_base, ".updated.bam"))
+    # Filter based on batches and row 
+    i <- 0L
+    keep_rule <- S4Vectors::FilterRules(list(
+      keep = function(rec) {
+        n <- NROW(rec$qname)
+        idx <- seq.int(i + 1L, length.out = n)
+        i <<- i + n
+        filter_which[idx]
+      }
+    ))
+    param <- Rsamtools::ScanBamParam(what = "qname")  # just to know chunk size
+    
     Rsamtools::indexBam(files = input_file)
-    input_bam <- Rsamtools::BamFile(input_file, index = input_file,
-                                    yieldSize = 100000000)
-    if (length(list(filter_which)) != length(list(bam_out))) {
-      message("update_bam unable to filter. Step skipped")
-    } else {
-      Rsamtools::filterBam(input_bam, destination = list(bam_out), filter = list(filter_which))
-      Rsamtools::indexBam(files = bam_out)
-      message("Updated bam file written to ", bam_out)
-      # Delete old bam file
-      old_bam <- file.path(tmp_dir, paste0(out_base, ".bam"))
-      old_bam_bai <- file.path(tmp_dir, paste0(out_base, ".bam.bai"))
-      if (file.exists(old_bam)) file.remove(old_bam)
-      if (file.exists(old_bam_bai)) file.remove(old_bam_bai)
-    }
+    input_bam <- Rsamtools::BamFile(input_file, yieldSize = 1e6)
+    
+    bam_out <- file.path(tmp_dir, paste0(out_base, ".updated.bam"))
+    
+    Rsamtools::filterBam(
+      input_bam,
+      destination = bam_out,
+      param = param,
+      filter = keep_rule,
+      indexDestination = TRUE
+    )
+    
   }
   # Plotting genome locations
   num_plot <- num_species_plot
