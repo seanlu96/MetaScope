@@ -849,19 +849,19 @@ metascope_blast <- function(metascope_id_path,
   species_percentage_hit <- blast_result_metrics_df |>
     dplyr::filter(!is.na(!!dplyr::sym("b_species"))) |> 
     dplyr::mutate(species_match = !!dplyr::sym("b_species") == !!dplyr::sym("ms_species")) |> 
-    group_by(!!dplyr::sym("ms_index"), !!dplyr::sym("read_id")) |> 
-    summarize(has_match = any(!!dplyr::sym("species_match")), .groups = "drop") |> # Check if read has at least one match
-    group_by(ms_index) |>
-    summarize(species_percentage_hit = mean(!!dplyr::sym("has_match")), .groups = "drop")
+    dplyr::group_by(!!dplyr::sym("ms_index"), !!dplyr::sym("read_id")) |> 
+    dplyr::summarize(has_match = any(!!dplyr::sym("species_match")), .groups = "drop") |> # Check if read has at least one match
+    dplyr::group_by(!!dplyr::sym("ms_index")) |>
+    dplyr::summarize(species_percentage_hit = mean(!!dplyr::sym("has_match")), .groups = "drop")
   ms_blast_results <- dplyr::left_join(ms_blast_results, species_percentage_hit, by = "ms_index")
   ## Genus Percentage Hit
   genus_percentage_hit <- blast_result_metrics_df |>
     dplyr::filter(!is.na(!!dplyr::sym("b_genus"))) |> 
     dplyr::mutate(genus_match = !!dplyr::sym("b_genus") == !!dplyr::sym("ms_genus")) |> 
-    group_by(!!dplyr::sym("ms_index"), !!dplyr::sym("read_id")) |> 
-    summarize(has_match = any(!!dplyr::sym("genus_match")), .groups = "drop") |> # Check if read has at least one match
-    group_by(ms_index) |>
-    summarize(genus_percentage_hit = mean(!!dplyr::sym("has_match")), .groups = "drop")
+    dplyr::group_by(!!dplyr::sym("ms_index"), !!dplyr::sym("read_id")) |> 
+    dplyr::summarize(has_match = any(!!dplyr::sym("genus_match")), .groups = "drop") |> # Check if read has at least one match
+    dplyr::group_by(!!dplyr::sym("ms_index")) |>
+    dplyr::summarize(genus_percentage_hit = mean(!!dplyr::sym("has_match")), .groups = "drop")
   ms_blast_results <- dplyr::left_join(ms_blast_results, genus_percentage_hit, by = "ms_index")
   ## Species Contaminant Score
   species_contaminant_score <- blast_result_metrics_df |>
@@ -999,7 +999,7 @@ blast_reassignment <- function(metascope_blast_path,
         },
         error = function(cond) {
           message("Problem with blast summary for current file: ")
-          message(blast_files[i])
+          message(blast_file[i])
           message(cond)
           # Choose a return value in case of error
           blast_summary <- dplyr::tibble(

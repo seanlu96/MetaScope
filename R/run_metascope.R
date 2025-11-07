@@ -160,7 +160,10 @@ run_metascope <- function(
                                              out_dir = out_dir), 
                                         extra_args_metascope_id))
     })
-    names(results) <- basename(fq_files) |> sub("\\.fastq(.gz)?$|\\.fq(.gz)?$", "", .)
+    
+    names(results) <- basename(fq_files) |>
+      sub("\\.fastq(.gz)?$|\\.fq(.gz)?$", "", x = _)
+    
   } else {
     message("Running paired-end alignment and MetaScopeID...")
     # assumes R1/R2 naming convention
@@ -198,18 +201,24 @@ run_metascope <- function(
     return(results)
   }
   else {
-    if (length(results_paths) == 0) stop("No MetaScope ID outputs found in: ", out_dir)
+    if (length(out_dir) == 0) stop("No MetaScope ID outputs found in: ", out_dir)
     # Read in all results
     all_res <- results |>
       purrr::map(function(path) {
         sample_name = sub(".metascope_id.csv", "", basename(path))
         read.csv(path) |>
-          dplyr::select(TaxonomyID, Genome, readsEM) |>
-          dplyr::rename(!!sample_name := readsEM)
+          dplyr::select(!!dplyr::sym("TaxonomyID"), !!dplyr::sym("Genome"), !!dplyr::sym("readsEM")) |>
+          dplyr::rename_with(~ sample_name, .cols = !!dplyr::sym("readsEM"))
       })
     # Merge together and rename column
     merged_res <- purrr::reduce(all_res, dplyr::full_join, by = c("TaxonomyID", "Genome")) |>
-      dplyr::mutate(dplyr::across(-c(TaxonomyID, Genome), ~ tidyr::replace_na(., 0)))
+      dplyr::mutate(
+        dplyr::across(
+          -dplyr::all_of(c("TaxonomyID", "Genome")),
+          ~ tidyr::replace_na(.x, 0)
+        )
+      )
+    
     write.csv(merged_res, file = file.path(out_dir, "metascope_results.csv"))
     return(merged_res)
   }
