@@ -206,7 +206,7 @@ run_metascope <- function(
     all_res <- results |>
       purrr::map(function(path) {
         sample_name = sub(".metascope_id.csv", "", basename(path))
-        read.csv(path) |>
+        utils::read.csv(path) |>
           dplyr::select(!!dplyr::sym("TaxonomyID"), !!dplyr::sym("Genome"), !!dplyr::sym("readsEM")) |>
           dplyr::rename_with(~ sample_name, .cols = !!dplyr::sym("readsEM"))
       })
@@ -219,7 +219,7 @@ run_metascope <- function(
         )
       )
     
-    write.csv(merged_res, file = file.path(out_dir, "metascope_results.csv"))
+    utils::write.csv(merged_res, file = file.path(out_dir, "metascope_results.csv"))
     return(merged_res)
   }
 }

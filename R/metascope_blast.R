@@ -767,7 +767,7 @@ metascope_blast <- function(metascope_id_path,
 
   # Calculate Blast metrics
   message("Running BLAST metrics on all blast results")
-  blast_result_metrics_df <- read.csv(res_path, header = FALSE)
+  blast_result_metrics_df <- utils::read.csv(res_path, header = FALSE)
   colnames(blast_result_metrics_df) <- c("qseqid", "sseqid", "pident", "length", "mismatch", "gapopen",
                                          "qstart", "qend", "sstart", "send", "evalue", "bitscore", "staxid")
   ## Extract MetaScope Taxid
